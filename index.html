@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <script>
+    // JS-based mobile block (runs before anything else)
+    if (/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent) ||
+        ('ontouchstart' in window && window.innerWidth < 1024)) {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('mobile-block').style.display = 'flex';
+        document.querySelectorAll('.screen').forEach(function(s) { s.style.display = 'none'; });
+      });
+    }
+  </script>
   <!-- ===== 모바일 차단 ===== -->
   <div id="mobile-block">
     <div class="mobile-block-box">
