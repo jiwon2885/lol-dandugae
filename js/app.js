@@ -197,10 +197,12 @@
     }
     showScreen('game');
 
-    // Draw background on canvas before countdown
+    // Draw background on canvas before countdown — fixed pixel size
     const cvs = el.canvas;
     cvs.width = window.screen.width;
     cvs.height = window.screen.height;
+    cvs.style.width = cvs.width + 'px';
+    cvs.style.height = cvs.height + 'px';
     if (bgImage) {
       const cx = cvs.getContext('2d');
       const scale = Math.max(cvs.width / bgImage.width, cvs.height / bgImage.height);
@@ -327,14 +329,12 @@
   }
 
   function calcGrade(stats) {
-    // Strict grading: need high kills + high accuracy + fast reaction
-    // 30s game: ~60 kills = godlike, ~40 = great, ~25 = decent
     const speedBonus = stats.avgReaction > 0 ? Math.max(0, (400 - stats.avgReaction) / 10) : 0;
     const score = stats.kills * 8 + stats.accuracy * 0.3 + speedBonus + stats.maxCombo * 2;
-    if (score >= 500) return 'S+';  // ~55+ kills, 90%+ acc, <300ms
-    if (score >= 400) return 'S';   // ~45+ kills, 85%+ acc
-    if (score >= 300) return 'A';   // ~35+ kills, 80%+ acc
-    if (score >= 180) return 'B';   // ~20+ kills
+    if (score >= 650) return 'S+';  // 130pt+ : 70+ kills, 90%+ acc, <250ms
+    if (score >= 520) return 'S';   // 104pt+ : 55+ kills, 85%+ acc
+    if (score >= 400) return 'A';   // 80pt+  : 45+ kills, 80%+ acc
+    if (score >= 280) return 'B';   // 56pt+  : 30+ kills
     return 'C';
   }
 
@@ -468,6 +468,18 @@
       }
     }, 800);
   }
+
+  // ========== BLOCK BROWSER ZOOM ==========
+  document.addEventListener('keydown', (e) => {
+    // Block Ctrl+Plus, Ctrl+Minus, Ctrl+0 (zoom shortcuts)
+    if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+    }
+  });
+  document.addEventListener('wheel', (e) => {
+    // Block Ctrl+Scroll (zoom)
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
 
   // --- Init ---
   showScreen('login');

@@ -24,11 +24,14 @@ class GameEngine {
     this.lastTime = 0;
     this.timerInterval = null;
 
-    // Fix canvas to screen size at creation — no resize allowed
-    this.canvas.width = window.screen.width;
-    this.canvas.height = window.screen.height;
-    this.W = this.canvas.width;
-    this.H = this.canvas.height;
+    // Fix canvas to screen resolution — CSS size matches pixel size 1:1
+    // No CSS scaling = zoom/resize cannot shrink the game area
+    this.W = window.screen.width;
+    this.H = window.screen.height;
+    this.canvas.width = this.W;
+    this.canvas.height = this.H;
+    this.canvas.style.width = this.W + 'px';
+    this.canvas.style.height = this.H + 'px';
 
     this._boundClick = (e) => this._handleClick(e);
     this.canvas.addEventListener('click', this._boundClick);
@@ -151,11 +154,11 @@ class GameEngine {
   _handleClick(e) {
     if (!this.running) return;
 
+    // Canvas CSS size = pixel size (1:1), so no scale needed
+    // Just offset by canvas position
     const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
     if (this.target) {
       const t = this.target;

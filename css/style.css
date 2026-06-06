@@ -19,6 +19,40 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* ===== Mobile Block ===== */
+#mobile-block {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-dark);
+  align-items: center;
+  justify-content: center;
+}
+.mobile-block-box {
+  text-align: center;
+  padding: 40px;
+}
+.mobile-block-box h1 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+.mobile-block-box p {
+  color: var(--text);
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+.mobile-sub {
+  color: var(--text-dim) !important;
+  font-size: 0.9rem !important;
+}
+@media (max-width: 768px), (pointer: coarse) {
+  #mobile-block { display: flex; }
+  .screen { display: none !important; }
+}
+
 body {
   font-family: var(--font-body);
   background: var(--bg-dark);
@@ -357,13 +391,14 @@ body {
 #screen-game {
   background: #000;
   cursor: crosshair;
+  overflow: hidden;
 }
 
 #game-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
+  /* Fixed pixel size set by JS — no CSS scaling */
 }
 
 #game-hud {
