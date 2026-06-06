@@ -74,13 +74,23 @@
     <div id="countdown-overlay">
       <span id="countdown-num">3</span>
     </div>
+    <div id="pause-overlay">
+      <div class="pause-box">
+        <h2 class="pause-title">일시정지</h2>
+        <p class="pause-desc">전체화면이 해제되었습니다</p>
+        <button id="btn-resume" class="btn-primary">계속하기</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== 결과 화면 ===== -->
   <div id="screen-result" class="screen">
     <div class="result-card">
       <h2 class="result-title">처형 완료</h2>
-      <div id="result-grade" class="grade">S</div>
+      <div class="grade-row">
+        <div id="result-grade" class="grade">S</div>
+        <div id="result-score" class="result-score">0</div>
+      </div>
       <div id="result-best-badge" class="best-badge" style="display:none;">NEW BEST!</div>
       <div class="result-stats">
         <div class="stat"><span class="stat-label">격파 수</span><span id="res-kills" class="stat-value">0</span></div>
@@ -105,10 +115,11 @@
           <tr>
             <th>#</th>
             <th>닉네임</th>
+            <th>점수</th>
             <th>격파</th>
-            <th>시간</th>
-            <th>반응속도</th>
             <th>정확도</th>
+            <th>콤보</th>
+            <th>반응속도</th>
             <th>등급</th>
           </tr>
         </thead>

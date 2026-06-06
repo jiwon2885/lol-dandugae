@@ -24,12 +24,16 @@ class GameEngine {
     this.lastTime = 0;
     this.timerInterval = null;
 
-    this._resizeCanvas();
-    this._boundResize = () => this._resizeCanvas();
-    window.addEventListener('resize', this._boundResize);
+    // Fix canvas to screen size at creation — no resize allowed
+    this.canvas.width = window.screen.width;
+    this.canvas.height = window.screen.height;
+    this.W = this.canvas.width;
+    this.H = this.canvas.height;
 
     this._boundClick = (e) => this._handleClick(e);
     this.canvas.addEventListener('click', this._boundClick);
+    this._boundContextMenu = (e) => { e.preventDefault(); this._handleClick(e); };
+    this.canvas.addEventListener('contextmenu', this._boundContextMenu);
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const touch = e.touches[0];
@@ -38,10 +42,7 @@ class GameEngine {
   }
 
   _resizeCanvas() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-    this.W = this.canvas.width;
-    this.H = this.canvas.height;
+    // No-op: canvas size is fixed to screen resolution
   }
 
   start() {
@@ -67,9 +68,36 @@ class GameEngine {
     }, 1000);
   }
 
-  stop() {
-    if (!this.running) return;
+  pause() {
+    if (!this.running || this.paused) return;
+    this.paused = true;
     this.running = false;
+    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+  }
+
+  resume() {
+    if (!this.paused) return;
+    this.paused = false;
+    this.running = true;
+    this.lastTime = performance.now();
+    // Reset spawn time so reaction isn't penalized for pause
+    this.targetSpawnTime = performance.now();
+    this._loop(this.lastTime);
+    this.timerInterval = setInterval(() => {
+      this.timeLeft--;
+      if (this.timeLeft <= 0) {
+        this.timeLeft = 0;
+        this.stop();
+      }
+      this.onTick(this._getStats());
+    }, 1000);
+  }
+
+  stop() {
+    if (!this.running && !this.paused) return;
+    this.running = false;
+    this.paused = false;
     this.target = null;
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
@@ -81,8 +109,9 @@ class GameEngine {
     this.running = false;
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    window.removeEventListener('resize', this._boundResize);
+    // No resize listener to remove
     this.canvas.removeEventListener('click', this._boundClick);
+    this.canvas.removeEventListener('contextmenu', this._boundContextMenu);
   }
 
   _getStats() {
@@ -136,7 +165,11 @@ class GameEngine {
         const reaction = performance.now() - this.targetSpawnTime;
         this.reactionTimes.push(Math.round(reaction));
         this.combo++;
-        this.kills += this.combo >= 30 ? 2 : 1;
+        let bonus = 0;
+        if (this.combo >= 30) bonus = 3;
+        else if (this.combo >= 15) bonus = 2;
+        else if (this.combo >= 5) bonus = 1;
+        this.kills += 1 + bonus;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
 
         this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
@@ -174,7 +207,7 @@ class GameEngine {
       type: 'blade',
       x, y, size, faceImg,
       combo: this.combo,
-      points: this.combo >= 30 ? 2 : 1,
+      points: 1 + (this.combo >= 30 ? 3 : this.combo >= 15 ? 2 : this.combo >= 5 ? 1 : 0),
       startTime: performance.now(),
       duration: 600,
       particles,
@@ -539,10 +572,11 @@ class GameEngine {
         ctx.globalAlpha = alpha;
         ctx.font = `900 ${fontSize}px 'Black Han Sans', sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillStyle = comboNum >= 30 ? '#ff4466' : '#f0d48a';
-        ctx.shadowColor = comboNum >= 30 ? 'rgba(255,68,102,0.8)' : 'rgba(200,169,110,0.6)';
-        ctx.shadowBlur = comboNum >= 30 ? 20 : 10;
-        ctx.fillText(`${comboNum} COMBO${comboNum >= 30 ? ' x2' : ''}`, x, popY);
+        const bonusLabel = comboNum >= 30 ? ' +3' : comboNum >= 15 ? ' +2' : comboNum >= 5 ? ' +1' : '';
+        ctx.fillStyle = comboNum >= 30 ? '#ff4466' : comboNum >= 15 ? '#ff8844' : '#f0d48a';
+        ctx.shadowColor = comboNum >= 30 ? 'rgba(255,68,102,0.8)' : comboNum >= 15 ? 'rgba(255,136,68,0.6)' : 'rgba(200,169,110,0.6)';
+        ctx.shadowBlur = comboNum >= 30 ? 20 : comboNum >= 15 ? 15 : 10;
+        ctx.fillText(`${comboNum} COMBO${bonusLabel}`, x, popY);
         ctx.restore();
       }
     }

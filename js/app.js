@@ -32,6 +32,7 @@
     countdownNum: document.getElementById('countdown-num'),
 
     resultGrade: document.getElementById('result-grade'),
+    resultScore: document.getElementById('result-score'),
     resultBestBadge: document.getElementById('result-best-badge'),
     resKills: document.getElementById('res-kills'),
     resAccuracy: document.getElementById('res-accuracy'),
@@ -40,6 +41,9 @@
     resKpm: document.getElementById('res-kpm'),
     btnRetry: document.getElementById('btn-retry'),
     btnToLobby: document.getElementById('btn-to-lobby'),
+
+    pauseOverlay: document.getElementById('pause-overlay'),
+    btnResume: document.getElementById('btn-resume'),
 
     rankingBody: document.getElementById('ranking-body'),
     rankingEmpty: document.getElementById('ranking-empty'),
@@ -184,12 +188,16 @@
 
   // ========== GAME ==========
   function startGame() {
+    // Force fullscreen to prevent window shrinking exploit
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
     showScreen('game');
 
     // Draw background on canvas before countdown
     const cvs = el.canvas;
-    cvs.width = window.innerWidth;
-    cvs.height = window.innerHeight;
+    cvs.width = window.screen.width;
+    cvs.height = window.screen.height;
     if (bgImage) {
       const cx = cvs.getContext('2d');
       const scale = Math.max(cvs.width / bgImage.width, cvs.height / bgImage.height);
@@ -291,13 +299,20 @@
       durationSec: stats.duration,
       reactionMs: stats.avgReaction,
       accuracy: stats.accuracy,
+      maxCombo: stats.maxCombo,
       grade,
       kpm: stats.kpm,
     });
 
+    // Calculate composite score (same formula as storage)
+    const speedBonus = stats.avgReaction > 0 ? Math.max(0, (400 - stats.avgReaction) / 10) : 0;
+    const raw = stats.kills * 8 + (stats.accuracy || 0) * 0.3 + speedBonus + (stats.maxCombo || 0) * 2;
+    const totalScore = Math.round(raw / 5);
+
     // Render result
     el.resultGrade.textContent = grade;
     el.resultGrade.className = 'grade grade-' + grade.toLowerCase().replace('+', 'plus');
+    el.resultScore.textContent = totalScore + 'pt';
 
     el.resultBestBadge.style.display = isBest && stats.kills > 0 ? 'inline-block' : 'none';
 
@@ -341,13 +356,14 @@
 
     el.rankingEmpty.style.display = 'none';
     el.rankingBody.innerHTML = rankings.map((r, i) => `
-      <tr>
+      <tr class="${r.nickname === currentNickname ? 'rank-me' : ''}">
         <td>${i + 1}</td>
         <td>${escapeHtml(r.nickname)}</td>
+        <td class="score-cell">${r.score || 0}</td>
         <td>${r.kills}</td>
-        <td>${r.durationSec}s</td>
-        <td>${r.reactionMs}ms</td>
         <td>${r.accuracy}%</td>
+        <td>${r.maxCombo || 0}</td>
+        <td>${r.reactionMs}ms</td>
         <td>${r.grade}</td>
       </tr>
     `).join('');
@@ -360,6 +376,67 @@
   }
 
   el.btnRankingBack.addEventListener('click', () => enterLobby());
+
+  // ========== PAUSE / RESUME (fullscreen exit detection) ==========
+  let gamePaused = false;
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && gameEngine && gameEngine.running) {
+      pauseGame();
+    }
+  });
+
+  function pauseGame() {
+    if (!gameEngine || gamePaused) return;
+    gamePaused = true;
+    gameEngine.pause();
+    el.pauseOverlay.classList.add('active');
+  }
+
+  el.btnResume.addEventListener('click', () => {
+    if (!gamePaused) return;
+    // Re-enter fullscreen first
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        startResumeCountdown();
+      }).catch(() => {
+        // If fullscreen denied, still allow resume
+        startResumeCountdown();
+      });
+    } else {
+      startResumeCountdown();
+    }
+  });
+
+  function startResumeCountdown() {
+    el.pauseOverlay.classList.remove('active');
+    el.countdownOverlay.classList.add('active');
+    let count = 3;
+    el.countdownNum.textContent = count;
+    AudioManager.playCountdownBeep(false);
+
+    const countInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        el.countdownNum.textContent = count;
+        el.countdownNum.style.animation = 'none';
+        void el.countdownNum.offsetWidth;
+        el.countdownNum.style.animation = 'countPulse 0.6s ease-out';
+        AudioManager.playCountdownBeep(false);
+      } else if (count === 0) {
+        el.countdownNum.textContent = 'GO!';
+        el.countdownNum.style.animation = 'none';
+        void el.countdownNum.offsetWidth;
+        el.countdownNum.style.animation = 'countPulse 0.6s ease-out';
+        AudioManager.playCountdownBeep(true);
+      } else {
+        clearInterval(countInterval);
+        el.countdownOverlay.classList.remove('active');
+        gamePaused = false;
+        if (gameEngine) gameEngine.resume();
+      }
+    }, 800);
+  }
 
   // --- Init ---
   showScreen('login');

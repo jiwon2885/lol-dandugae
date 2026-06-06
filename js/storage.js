@@ -53,24 +53,28 @@ const Storage = (() => {
   // --- Scores ---
   function getScores() { return _get(SCORES_KEY) || []; }
 
+  function calcScore(entry) {
+    const speedBonus = entry.reactionMs > 0 ? Math.max(0, (400 - entry.reactionMs) / 10) : 0;
+    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + speedBonus + (entry.maxCombo || 0) * 2;
+    return Math.round(raw / 5);
+  }
+
   function addScore(entry) {
     const scores = getScores();
-    scores.push({ ...entry, id: Date.now(), createdAt: Date.now() });
-    scores.sort((a, b) => b.kills - a.kills || a.reactionMs - b.reactionMs);
-    if (scores.length > 100) scores.length = 100;
+    const score = calcScore(entry);
+    scores.push({ ...entry, score, id: Date.now(), createdAt: Date.now() });
+    scores.sort((a, b) => b.score - a.score);
+    if (scores.length > 200) scores.length = 200;
     _set(SCORES_KEY, scores);
   }
 
   function getRankings() {
     const scores = getScores();
-    const bestMap = {};
+    // Recalculate score for old entries that don't have it
     for (const s of scores) {
-      if (!bestMap[s.nickname] || s.kills > bestMap[s.nickname].kills ||
-          (s.kills === bestMap[s.nickname].kills && s.reactionMs < bestMap[s.nickname].reactionMs)) {
-        bestMap[s.nickname] = s;
-      }
+      if (s.score == null) s.score = calcScore(s);
     }
-    return Object.values(bestMap).sort((a, b) => b.kills - a.kills || a.reactionMs - b.reactionMs);
+    return scores.sort((a, b) => b.score - a.score);
   }
 
   function deleteProfile(nick) {
