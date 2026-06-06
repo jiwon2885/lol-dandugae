@@ -344,12 +344,18 @@
   el.btnToLobby.addEventListener('click', () => enterLobby());
 
   // ========== RANKING ==========
-  function showRanking() {
+  async function showRanking() {
     showScreen('ranking');
-    const rankings = Storage.getRankings();
+    el.rankingBody.innerHTML = '';
+    el.rankingEmpty.style.display = 'none';
+    el.rankingEmpty.textContent = '로딩 중...';
+    el.rankingEmpty.style.display = 'block';
+
+    const rankings = await Storage.getRankings();
 
     if (rankings.length === 0) {
       el.rankingBody.innerHTML = '';
+      el.rankingEmpty.textContent = '아직 기록이 없습니다.';
       el.rankingEmpty.style.display = 'block';
       return;
     }

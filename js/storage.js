@@ -1,7 +1,7 @@
-/* ===== LocalStorage 기반 저장 ===== */
+/* ===== LocalStorage (프로필) + 서버 API (랭킹) ===== */
 const Storage = (() => {
   const PROFILES_KEY = 'guillotine_profiles';
-  const SCORES_KEY = 'guillotine_scores';
+  const API_URL = '/api/scores';
 
   function _get(key) {
     try { return JSON.parse(localStorage.getItem(key)) || null; }
@@ -18,7 +18,7 @@ const Storage = (() => {
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // --- Profiles ---
+  // --- Profiles (localStorage) ---
   function getProfiles() { return _get(PROFILES_KEY) || {}; }
   function saveProfiles(p) { _set(PROFILES_KEY, p); }
 
@@ -50,40 +50,44 @@ const Storage = (() => {
     saveProfiles(profiles);
   }
 
-  // --- Scores ---
-  function getScores() { return _get(SCORES_KEY) || []; }
+  function deleteProfile(nick) {
+    const profiles = getProfiles();
+    delete profiles[nick];
+    saveProfiles(profiles);
+  }
 
+  // --- Score calculation ---
   function calcScore(entry) {
     const speedBonus = entry.reactionMs > 0 ? Math.max(0, (400 - entry.reactionMs) / 10) : 0;
     const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + speedBonus + (entry.maxCombo || 0) * 2;
     return Math.round(raw / 5);
   }
 
-  function addScore(entry) {
-    const scores = getScores();
+  // --- Scores (서버 API) ---
+  async function addScore(entry) {
     const score = calcScore(entry);
-    scores.push({ ...entry, score, id: Date.now(), createdAt: Date.now() });
-    scores.sort((a, b) => b.score - a.score);
-    if (scores.length > 200) scores.length = 200;
-    _set(SCORES_KEY, scores);
-  }
-
-  function getRankings() {
-    const scores = getScores();
-    // Recalculate score for old entries that don't have it
-    for (const s of scores) {
-      if (s.score == null) s.score = calcScore(s);
+    const data = { ...entry, score };
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch (err) {
+      console.error('Score submit failed:', err);
     }
-    return scores.sort((a, b) => b.score - a.score);
   }
 
-  function deleteProfile(nick) {
-    const profiles = getProfiles();
-    delete profiles[nick];
-    saveProfiles(profiles);
-    const scores = getScores().filter(s => s.nickname !== nick);
-    _set(SCORES_KEY, scores);
+  async function getRankings() {
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('API error');
+      return await res.json();
+    } catch (err) {
+      console.error('Rankings fetch failed:', err);
+      return [];
+    }
   }
 
-  return { hashPin, getProfile, createProfile, updateProfile, addScore, getRankings, deleteProfile };
+  return { hashPin, getProfile, createProfile, updateProfile, deleteProfile, calcScore, addScore, getRankings };
 })();
