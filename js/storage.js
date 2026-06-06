@@ -59,7 +59,7 @@ const Storage = (() => {
   // --- Score calculation ---
   function calcScore(entry) {
     const speedBonus = entry.reactionMs > 0 ? Math.max(0, (400 - entry.reactionMs) / 10) : 0;
-    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + speedBonus + (entry.maxCombo || 0) * 2;
+    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + speedBonus + (entry.maxCombo || 0) * 2 + (entry.bonusPoints || 0) * 5;
     return Math.round(raw / 5);
   }
 

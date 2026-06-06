@@ -54,6 +54,7 @@ class GameEngine {
     this.misses = 0;
     this.combo = 0;
     this.maxCombo = 0;
+    this.bonusPoints = 0;
     this.reactionTimes = [];
     this.timeLeft = this.duration;
     this.animations = [];
@@ -130,6 +131,7 @@ class GameEngine {
       misses: this.misses,
       combo: this.combo,
       maxCombo: this.maxCombo,
+      bonusPoints: this.bonusPoints,
       avgReaction,
       accuracy,
       timeLeft: this.timeLeft,
@@ -172,7 +174,8 @@ class GameEngine {
         if (this.combo >= 30) bonus = 3;
         else if (this.combo >= 15) bonus = 2;
         else if (this.combo >= 5) bonus = 1;
-        this.kills += 1 + bonus;
+        this.kills += 1;
+        this.bonusPoints += bonus;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
 
         this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
