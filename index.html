@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>롤대남 단두대</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ===== 로그인 화면 ===== -->
+  <div id="screen-login" class="screen active">
+    <div class="login-box">
+      <h1 class="title-logo">롤대남 단두대</h1>
+      <p class="subtitle">에임 & 반응속도 트레이너</p>
+      <div class="input-group">
+        <label for="nickname-input">닉네임</label>
+        <input type="text" id="nickname-input" placeholder="닉네임 입력" maxlength="16" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label id="pin-label" for="pin-input">PIN (4자리)</label>
+        <input type="password" id="pin-input" placeholder="****" maxlength="4" inputmode="numeric" autocomplete="off">
+      </div>
+      <div id="pin-confirm-section" class="input-group" style="display:none;">
+        <label for="pin-confirm-input">PIN 확인</label>
+        <input type="password" id="pin-confirm-input" placeholder="****" maxlength="4" inputmode="numeric" autocomplete="off">
+      </div>
+      <button id="btn-login" class="btn-primary" disabled>입장</button>
+      <p id="login-error" class="error-text"></p>
+    </div>
+  </div>
+
+  <!-- ===== 로비 화면 ===== -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <h2>로비</h2>
+        <span id="lobby-nickname" class="nick-badge"></span>
+      </div>
+
+      <div class="lobby-card">
+        <h3>처형 대상</h3>
+        <p class="card-desc">오늘의 타겟 7명</p>
+        <div id="face-preview" class="face-grid"></div>
+      </div>
+
+      <div class="lobby-card">
+        <h3>설정</h3>
+        <div class="setting-row">
+          <label>게임 시간</label>
+          <span class="fixed-val">30초</span>
+        </div>
+        <div class="setting-row">
+          <label>타겟 크기</label>
+          <span class="fixed-val">100px</span>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button id="btn-start" class="btn-primary btn-large">게임 시작</button>
+        <button id="btn-ranking" class="btn-secondary">랭킹 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 게임 화면 ===== -->
+  <div id="screen-game" class="screen">
+    <div id="game-hud">
+      <div class="hud-item"><span class="hud-label">시간</span><span id="hud-time">30</span></div>
+      <div class="hud-item"><span class="hud-label">격파</span><span id="hud-kills">0</span></div>
+      <div class="hud-item"><span class="hud-label">콤보</span><span id="hud-combo">0</span></div>
+      <div class="hud-item"><span class="hud-label">반응속도</span><span id="hud-reaction">-</span></div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <div id="countdown-overlay">
+      <span id="countdown-num">3</span>
+    </div>
+  </div>
+
+  <!-- ===== 결과 화면 ===== -->
+  <div id="screen-result" class="screen">
+    <div class="result-card">
+      <h2 class="result-title">처형 완료</h2>
+      <div id="result-grade" class="grade">S</div>
+      <div id="result-best-badge" class="best-badge" style="display:none;">NEW BEST!</div>
+      <div class="result-stats">
+        <div class="stat"><span class="stat-label">격파 수</span><span id="res-kills" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">정확도</span><span id="res-accuracy" class="stat-value">0%</span></div>
+        <div class="stat"><span class="stat-label">평균 반응속도</span><span id="res-reaction" class="stat-value">0ms</span></div>
+        <div class="stat"><span class="stat-label">최대 콤보</span><span id="res-combo" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">분당 격파</span><span id="res-kpm" class="stat-value">0</span></div>
+      </div>
+      <div class="result-actions">
+        <button id="btn-retry" class="btn-primary">다시 하기</button>
+        <button id="btn-to-lobby" class="btn-secondary">로비로</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 랭킹 화면 ===== -->
+  <div id="screen-ranking" class="screen">
+    <div class="ranking-container">
+      <h2>랭킹</h2>
+      <table id="ranking-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>닉네임</th>
+            <th>격파</th>
+            <th>시간</th>
+            <th>반응속도</th>
+            <th>정확도</th>
+            <th>등급</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+      <p id="ranking-empty" style="display:none;">아직 기록이 없습니다.</p>
+      <button id="btn-ranking-back" class="btn-secondary">돌아가기</button>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
