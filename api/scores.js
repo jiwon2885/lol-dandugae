@@ -28,6 +28,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      // Block mobile submissions server-side
+      const ua = (req.headers['user-agent'] || '').toLowerCase();
+      if (/android|iphone|ipad|ipod|mobile|tablet/.test(ua)) {
+        return res.status(403).json({ error: 'PC only' });
+      }
       const entry = req.body;
       if (!entry.nickname || entry.score == null) {
         return res.status(400).json({ error: 'Invalid data' });
