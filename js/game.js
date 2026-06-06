@@ -33,10 +33,18 @@ class GameEngine {
     this.canvas.style.width = this.W + 'px';
     this.canvas.style.height = this.H + 'px';
 
-    this._boundClick = (e) => this._handleClick(e);
-    this.canvas.addEventListener('click', this._boundClick);
-    this._boundContextMenu = (e) => { e.preventDefault(); this._handleClick(e); };
-    this.canvas.addEventListener('contextmenu', this._boundContextMenu);
+    // Use mousedown instead of click to prevent double-fire issues
+    this._lastClickTime = 0;
+    this._boundClick = (e) => {
+      e.preventDefault();
+      // Debounce: ignore clicks within 50ms of each other
+      const now = performance.now();
+      if (now - this._lastClickTime < 50) return;
+      this._lastClickTime = now;
+      this._handleClick(e);
+    };
+    this.canvas.addEventListener('mousedown', this._boundClick);
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const touch = e.touches[0];
@@ -114,8 +122,7 @@ class GameEngine {
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     // No resize listener to remove
-    this.canvas.removeEventListener('click', this._boundClick);
-    this.canvas.removeEventListener('contextmenu', this._boundContextMenu);
+    this.canvas.removeEventListener('mousedown', this._boundClick);
   }
 
   _getStats() {
