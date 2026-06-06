@@ -69,6 +69,7 @@
       <div class="hud-item"><span class="hud-label">격파</span><span id="hud-kills">0</span></div>
       <div class="hud-item"><span class="hud-label">콤보</span><span id="hud-combo">0</span></div>
       <div class="hud-item"><span class="hud-label">반응속도</span><span id="hud-reaction">-</span></div>
+      <button id="btn-pause" class="hud-pause" title="일시정지">⏸</button>
     </div>
     <canvas id="game-canvas"></canvas>
     <div id="countdown-overlay">
@@ -77,8 +78,11 @@
     <div id="pause-overlay">
       <div class="pause-box">
         <h2 class="pause-title">일시정지</h2>
-        <p class="pause-desc">전체화면이 해제되었습니다</p>
-        <button id="btn-resume" class="btn-primary">계속하기</button>
+        <p id="pause-desc" class="pause-desc"></p>
+        <div class="pause-actions">
+          <button id="btn-resume" class="btn-primary">계속하기</button>
+          <button id="btn-pause-lobby" class="btn-secondary">로비로 나가기</button>
+        </div>
       </div>
     </div>
   </div>

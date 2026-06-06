@@ -1,4 +1,9 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 const SCORES_KEY = 'guillotine_scores';
 
@@ -10,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const scores = (await kv.get(SCORES_KEY)) || [];
+      const scores = (await redis.get(SCORES_KEY)) || [];
       // Best score per player only
       const bestMap = {};
       for (const s of scores) {
@@ -27,7 +32,7 @@ export default async function handler(req, res) {
       if (!entry.nickname || entry.score == null) {
         return res.status(400).json({ error: 'Invalid data' });
       }
-      const scores = (await kv.get(SCORES_KEY)) || [];
+      const scores = (await redis.get(SCORES_KEY)) || [];
       scores.push({
         nickname: entry.nickname,
         kills: entry.kills,
@@ -43,7 +48,7 @@ export default async function handler(req, res) {
       });
       scores.sort((a, b) => b.score - a.score);
       if (scores.length > 500) scores.length = 500;
-      await kv.set(SCORES_KEY, scores);
+      await redis.set(SCORES_KEY, scores);
       return res.json({ ok: true });
     }
 

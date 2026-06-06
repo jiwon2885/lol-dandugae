@@ -1,2 +1,6 @@
 .claude/
 *.mov
+
+.vercel
+.env*
+node_modules/

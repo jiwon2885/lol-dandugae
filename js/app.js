@@ -43,7 +43,10 @@
     btnToLobby: document.getElementById('btn-to-lobby'),
 
     pauseOverlay: document.getElementById('pause-overlay'),
+    pauseDesc: document.getElementById('pause-desc'),
     btnResume: document.getElementById('btn-resume'),
+    btnPauseLobby: document.getElementById('btn-pause-lobby'),
+    btnPause: document.getElementById('btn-pause'),
 
     rankingBody: document.getElementById('ranking-body'),
     rankingEmpty: document.getElementById('ranking-empty'),
@@ -388,16 +391,38 @@
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && gameEngine && gameEngine.running) {
-      pauseGame();
+      pauseGame('전체화면이 해제되었습니다');
     }
   });
 
-  function pauseGame() {
+  el.btnPause.addEventListener('click', () => {
+    if (gameEngine && gameEngine.running) {
+      pauseGame('');
+    }
+  });
+
+  function pauseGame(reason) {
     if (!gameEngine || gamePaused) return;
     gamePaused = true;
     gameEngine.pause();
+    el.pauseDesc.textContent = reason || '';
     el.pauseOverlay.classList.add('active');
   }
+
+  el.btnPauseLobby.addEventListener('click', () => {
+    if (!gamePaused) return;
+    gamePaused = false;
+    if (gameEngine) {
+      gameEngine.destroy();
+      gameEngine = null;
+    }
+    AudioManager.stopBGM();
+    el.pauseOverlay.classList.remove('active');
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    enterLobby();
+  });
 
   el.btnResume.addEventListener('click', () => {
     if (!gamePaused) return;
