@@ -33,23 +33,27 @@ class GameEngine {
     this.canvas.style.width = this.W + 'px';
     this.canvas.style.height = this.H + 'px';
 
-    // Use mousedown instead of click to prevent double-fire issues
+    // Shared debounce for all input types (mouse + touch)
     this._lastClickTime = 0;
     this._boundClick = (e) => {
       e.preventDefault();
-      // Debounce: ignore clicks within 50ms of each other
       const now = performance.now();
       if (now - this._lastClickTime < 50) return;
       this._lastClickTime = now;
       this._handleClick(e);
     };
-    this.canvas.addEventListener('mousedown', this._boundClick);
-    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    this.canvas.addEventListener('touchstart', (e) => {
+    this._boundTouch = (e) => {
       e.preventDefault();
+      const now = performance.now();
+      if (now - this._lastClickTime < 50) return;
+      this._lastClickTime = now;
       const touch = e.touches[0];
       this._handleClick(touch);
-    }, { passive: false });
+    };
+    this._boundContextMenu = (e) => e.preventDefault();
+    this.canvas.addEventListener('mousedown', this._boundClick);
+    this.canvas.addEventListener('contextmenu', this._boundContextMenu);
+    this.canvas.addEventListener('touchstart', this._boundTouch, { passive: false });
   }
 
   _resizeCanvas() {
@@ -125,6 +129,14 @@ class GameEngine {
     if (this._boundClick) {
       this.canvas.removeEventListener('mousedown', this._boundClick);
       this._boundClick = null;
+    }
+    if (this._boundTouch) {
+      this.canvas.removeEventListener('touchstart', this._boundTouch);
+      this._boundTouch = null;
+    }
+    if (this._boundContextMenu) {
+      this.canvas.removeEventListener('contextmenu', this._boundContextMenu);
+      this._boundContextMenu = null;
     }
   }
 
