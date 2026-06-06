@@ -246,6 +246,11 @@
   }
 
   function launchEngine() {
+    // Destroy previous engine to prevent duplicate event listeners
+    if (gameEngine) {
+      gameEngine.destroy();
+      gameEngine = null;
+    }
     gameEngine = new GameEngine(el.canvas, {
       faceImages,
       duration: 30,

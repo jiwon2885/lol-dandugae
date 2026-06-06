@@ -119,10 +119,13 @@ class GameEngine {
 
   destroy() {
     this.running = false;
+    this.paused = false;
     if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    // No resize listener to remove
-    this.canvas.removeEventListener('mousedown', this._boundClick);
+    if (this._boundClick) {
+      this.canvas.removeEventListener('mousedown', this._boundClick);
+      this._boundClick = null;
+    }
   }
 
   _getStats() {
