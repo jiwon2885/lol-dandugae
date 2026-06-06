@@ -58,7 +58,7 @@ const Storage = (() => {
 
   // --- Score calculation ---
   function calcScore(entry) {
-    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + (entry.maxCombo || 0) * 2 + (entry.bonusPoints || 0) * 5;
+    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + (entry.maxCombo || 0) * 2 + (entry.bonusPoints || 0) * 2;
     return Math.round(raw / 5);
   }
 
