@@ -310,9 +310,13 @@
       kpm: stats.kpm,
     });
 
-    // Calculate composite score (same formula as storage)
-    const raw = stats.kills * 8 + (stats.accuracy || 0) * 0.3 + (stats.maxCombo || 0) * 2 + (stats.bonusPoints || 0) * 5;
-    const totalScore = Math.round(raw / 5);
+    // Use the same calcScore as storage (single source of truth)
+    const totalScore = Storage.calcScore({
+      kills: stats.kills,
+      accuracy: stats.accuracy,
+      maxCombo: stats.maxCombo,
+      bonusPoints: stats.bonusPoints,
+    });
 
     // Render result
     el.resultGrade.textContent = grade;
@@ -329,11 +333,16 @@
   }
 
   function calcGrade(stats) {
-    const score = stats.kills * 8 + stats.accuracy * 0.3 + stats.maxCombo * 2 + (stats.bonusPoints || 0) * 5;
-    if (score >= 650) return 'S+';  // 130pt+ : 70+ kills, 90%+ acc, <250ms
-    if (score >= 520) return 'S';   // 104pt+ : 55+ kills, 85%+ acc
-    if (score >= 400) return 'A';   // 80pt+  : 45+ kills, 80%+ acc
-    if (score >= 280) return 'B';   // 56pt+  : 30+ kills
+    const score = Storage.calcScore({
+      kills: stats.kills,
+      accuracy: stats.accuracy,
+      maxCombo: stats.maxCombo,
+      bonusPoints: stats.bonusPoints,
+    });
+    if (score >= 130) return 'S+';
+    if (score >= 104) return 'S';
+    if (score >= 80) return 'A';
+    if (score >= 56) return 'B';
     return 'C';
   }
 
