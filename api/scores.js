@@ -55,8 +55,9 @@ export default async function handler(req, res) {
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
-      const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), 120));
-      const durationSec = Number(entry.durationSec) || 30;
+      const maxKills = mode === 'tracking' ? 240 : 120;
+      const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), maxKills));
+      const durationSec = Number(entry.durationSec) || (mode === 'tracking' ? 60 : 30);
       const accuracy = Math.max(0, Math.min(Math.floor(Number(entry.accuracy) || 0), 100));
       const maxCombo = Math.max(0, Math.min(Math.floor(Number(entry.maxCombo) || 0), kills));
       const reactionMs = Math.max(0, Math.min(Math.floor(Number(entry.reactionMs) || 0), 9999));

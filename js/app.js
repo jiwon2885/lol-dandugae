@@ -224,6 +224,7 @@ window.onerror = function(msg, src, line, col, err) {
   // ========== LOBBY ==========
   const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity };
   const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking' };
+  const MODE_DURATION = { grid: 30, triple: 30, tracking: 60 };
 
   function enterLobby() {
     showScreen('lobby');
@@ -232,6 +233,11 @@ window.onerror = function(msg, src, line, col, err) {
     // Show mode name at top
     const modeName = document.getElementById('lobby-mode-name');
     if (modeName) modeName.textContent = MODE_LABELS[currentMode] || '';
+
+    // Update game time display
+    const dur = MODE_DURATION[currentMode] || 30;
+    const timeValEl = document.querySelector('.lobby-info-value');
+    if (timeValEl) timeValEl.textContent = dur + '초';
 
     renderFacePreviews();
   }
@@ -502,10 +508,11 @@ window.onerror = function(msg, src, line, col, err) {
       gameEngine.destroy();
       gameEngine = null;
     }
+    const gameDuration = MODE_DURATION[currentMode] || 30;
     gameEngine = new GameEngine(el.canvas, {
       mode: currentMode,
       faceImages: getSelectedFaceImages(),
-      duration: 30,
+      duration: gameDuration,
       targetSize: 100,
       bgImage,
       onTick: (stats) => updateHUD(stats),
@@ -513,7 +520,7 @@ window.onerror = function(msg, src, line, col, err) {
     });
     gameEngine.start();
     pauseCount = 0;
-    updateHUD({ timeLeft: 30, kills: 0, combo: 0, avgReaction: 0, trackTime: 0, trackAccuracy: 0 });
+    updateHUD({ timeLeft: gameDuration, kills: 0, combo: 0, avgReaction: 0, trackTime: 0, trackAccuracy: 0 });
   }
 
   function updateHUD(stats) {
