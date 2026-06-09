@@ -55,6 +55,8 @@ export default async function handler(req, res) {
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
+      const allowedModes = ['grid', 'triple', 'tracking'];
+      const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
       const maxKills = mode === 'tracking' ? 240 : 120;
       const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), maxKills));
       const durationSec = Number(entry.durationSec) || (mode === 'tracking' ? 60 : 30);
@@ -65,8 +67,6 @@ export default async function handler(req, res) {
       const kpm = Math.max(0, Math.min(Math.floor(Number(entry.kpm) || 0), 240));
       const allowedGrades = ['C', 'B', 'A', 'S', 'S+'];
       const grade = allowedGrades.includes(entry.grade) ? entry.grade : 'C';
-      const allowedModes = ['grid', 'triple', 'tracking'];
-      const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
 
       // Anti-cheat: validate click log (skip for tracking mode — different input pattern)
       const clickLog = Array.isArray(entry.clickLog) ? entry.clickLog : [];
