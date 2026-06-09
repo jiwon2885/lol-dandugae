@@ -492,15 +492,36 @@
     }, 800);
   }
 
-  // ========== BLOCK BROWSER ZOOM ==========
+  // ========== BLOCK DEVTOOLS & ZOOM ==========
   document.addEventListener('keydown', (e) => {
+    // Block F12, Ctrl+Shift+I/J/C (DevTools shortcuts)
+    if (e.key === 'F12') { e.preventDefault(); return; }
+    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) { e.preventDefault(); return; }
+    // Block Ctrl+U (view source)
+    if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return; }
+    // Block zoom
     if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
       e.preventDefault();
     }
   });
+  // Block right-click context menu
+  document.addEventListener('contextmenu', (e) => { e.preventDefault(); });
   document.addEventListener('wheel', (e) => {
     if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
+
+  // ========== DEVTOOLS OPEN DETECTION ==========
+  // Detect devtools via debugger timing
+  setInterval(() => {
+    const start = performance.now();
+    debugger;
+    if (performance.now() - start > 100) {
+      // DevTools is open — pause game if running
+      if (gameEngine && gameEngine.running) {
+        pauseGame('개발자 도구가 감지되었습니다');
+      }
+    }
+  }, 3000);
 
   // --- Init ---
   showScreen('login');
