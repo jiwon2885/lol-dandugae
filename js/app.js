@@ -1,11 +1,4 @@
 /* ===== App Controller ===== */
-window.onerror = function(msg, src, line, col, err) {
-  document.title = 'ERR: ' + msg;
-  var d = document.createElement('div');
-  d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:red;color:white;padding:12px;font-size:14px;word-break:break-all;';
-  d.textContent = '[JS Error] ' + msg + ' at ' + src + ':' + line + ':' + col;
-  document.body.appendChild(d);
-};
 (() => {
   // --- Supabase Auth ---
   const SUPABASE_URL = 'https://kksnddwgfnxaztboegax.supabase.co';
@@ -441,6 +434,7 @@ window.onerror = function(msg, src, line, col, err) {
     // Toggle HUD items based on mode
     const isTracking = currentMode === 'tracking';
     document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
+    document.querySelectorAll('.hud-grid').forEach(el => el.style.display = isTracking ? 'none' : '');
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
@@ -556,6 +550,8 @@ window.onerror = function(msg, src, line, col, err) {
     setTimeout(() => showScreen('result'), 50);
 
     const grade = calcGrade(stats);
+    const effectiveAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
+      ? stats.trackAccuracy : stats.accuracy;
 
     // Update profile
     const isBest = stats.kills > (currentProfile.bestScore || 0);
@@ -569,13 +565,15 @@ window.onerror = function(msg, src, line, col, err) {
     currentProfile = Storage.getProfile(currentNickname);
 
     // Save score (check if banned by anti-cheat)
+    const submitAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
+      ? stats.trackAccuracy : stats.accuracy;
     Storage.addScore({
       nickname: currentNickname,
       userId: currentUserId,
       kills: stats.kills,
       durationSec: stats.duration,
       reactionMs: stats.avgReaction,
-      accuracy: stats.accuracy,
+      accuracy: submitAccuracy,
       maxCombo: stats.maxCombo,
       bonusPoints: stats.bonusPoints,
       grade,
@@ -593,7 +591,7 @@ window.onerror = function(msg, src, line, col, err) {
     // Use the same calcScore as storage (single source of truth)
     const totalScore = Storage.calcScore({
       kills: stats.kills,
-      accuracy: stats.accuracy,
+      accuracy: effectiveAccuracy,
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
     });
@@ -606,9 +604,22 @@ window.onerror = function(msg, src, line, col, err) {
     el.resultBestBadge.style.display = isBest && stats.kills > 0 ? 'inline-block' : 'none';
 
     el.resKills.textContent = stats.kills;
-    el.resAccuracy.textContent = stats.accuracy + '%';
+    // Tracking mode: show tracking accuracy instead of click accuracy
+    const displayAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
+      ? stats.trackAccuracy : stats.accuracy;
+    el.resAccuracy.textContent = displayAccuracy + '%';
     el.resCombo.textContent = stats.maxCombo;
     el.resKpm.textContent = stats.kpm;
+
+    // Update stat labels for tracking mode
+    const statLabels = document.querySelectorAll('.stat-label');
+    if (currentMode === 'tracking') {
+      if (statLabels[1]) statLabels[1].textContent = '\ud2b8\ub798\ud0b9 \uc815\ud655\ub3c4';
+      if (statLabels[3]) statLabels[3].textContent = '\ubd84\ub2f9 \ucc98\uce58';
+    } else {
+      if (statLabels[1]) statLabels[1].textContent = '\uc815\ud655\ub3c4';
+      if (statLabels[3]) statLabels[3].textContent = '\ubd84\ub2f9 \uaca9\ud30c';
+    }
   }
 
   // Mode-specific grade thresholds (balanced to similar difficulty)
@@ -619,9 +630,11 @@ window.onerror = function(msg, src, line, col, err) {
   };
 
   function calcGrade(stats) {
+    const acc = (currentMode === 'tracking' && stats.trackAccuracy != null)
+      ? stats.trackAccuracy : stats.accuracy;
     const score = Storage.calcScore({
       kills: stats.kills,
-      accuracy: stats.accuracy,
+      accuracy: acc,
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
     });
