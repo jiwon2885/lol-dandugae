@@ -14,36 +14,48 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    // List all active bans (no userId required)
+    if (req.method === 'GET' && req.query?.list === 'all') {
+      const keys = [];
+      let cursor = 0;
+      do {
+        const result = await redis.scan(cursor, { match: 'ban:*', count: 100 });
+        cursor = result[0];
+        keys.push(...result[1]);
+      } while (cursor !== 0 && cursor !== '0');
+      const bans = [];
+      for (const key of keys) {
+        const val = await redis.get(key);
+        if (val && Date.now() < Number(val)) {
+          bans.push({ key, userId: key.replace('ban:', ''), banUntil: Number(val) });
+        }
+      }
+      return res.json(bans);
+    }
+
+    // Unban all active bans
+    if (req.method === 'DELETE' && req.query?.action === 'unban-all') {
+      const keys = [];
+      let cursor = 0;
+      do {
+        const result = await redis.scan(cursor, { match: 'ban:*', count: 100 });
+        cursor = result[0];
+        keys.push(...result[1]);
+      } while (cursor !== 0 && cursor !== '0');
+      for (const key of keys) await redis.del(key);
+      return res.json({ unbanned: keys.length });
+    }
+
     const userId = req.body?.userId || req.query?.userId;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
     const banKey = `ban:${userId}`;
 
     if (req.method === 'POST') {
-      // Set ban with TTL (auto-expires)
       await redis.set(banKey, Date.now() + BAN_DURATION_SEC * 1000, { ex: BAN_DURATION_SEC });
       return res.json({ banned: true, banUntil: Date.now() + BAN_DURATION_SEC * 1000 });
     }
 
     if (req.method === 'GET') {
-      // List all active bans
-      if (req.query?.list === 'all') {
-        const keys = [];
-        let cursor = 0;
-        do {
-          const result = await redis.scan(cursor, { match: 'ban:*', count: 100 });
-          cursor = result[0];
-          keys.push(...result[1]);
-        } while (cursor !== 0 && cursor !== '0');
-        const bans = [];
-        for (const key of keys) {
-          const val = await redis.get(key);
-          if (val && Date.now() < Number(val)) {
-            bans.push({ key, userId: key.replace('ban:', ''), banUntil: Number(val) });
-          }
-        }
-        return res.json(bans);
-      }
-
       const banUntil = await redis.get(banKey);
       if (banUntil && Date.now() < Number(banUntil)) {
         return res.json({ banned: true, banUntil: Number(banUntil) });
@@ -52,19 +64,6 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Also support unban by nickname: find userId from scores
-      const nickname = req.query?.nickname || req.body?.nickname;
-      if (nickname && !req.query?.userId && !req.body?.userId) {
-        const SCORES_KEY = 'guillotine_scores';
-        const scores = (await redis.get(SCORES_KEY)) || [];
-        const match = scores.find(s => s.nickname === nickname && s.userId);
-        if (match) {
-          const nBanKey = `ban:${match.userId}`;
-          await redis.del(nBanKey);
-          return res.json({ unbanned: true, userId: match.userId });
-        }
-        return res.status(404).json({ error: 'User not found in scores' });
-      }
       await redis.del(banKey);
       return res.json({ unbanned: true });
     }
