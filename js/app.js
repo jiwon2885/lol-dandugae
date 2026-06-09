@@ -235,7 +235,7 @@
     const count = selectedFaces.size;
     document.getElementById('face-count-desc').textContent = count + '명 선택됨';
     const warn = document.getElementById('face-warn');
-    if (count < 3) {
+    if (count < 1) {
       warn.style.display = 'block';
       el.btnStart.disabled = true;
     } else {
@@ -260,7 +260,7 @@
 
   // Start game
   el.btnStart.addEventListener('click', () => {
-    if (selectedFaces.size < 3) return;
+    if (selectedFaces.size < 1) return;
     startGame();
   });
 
