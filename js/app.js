@@ -350,11 +350,23 @@ window.onerror = function(msg, src, line, col, err) {
   const volBgmVal = document.getElementById('vol-bgm-val');
   const volSfx = document.getElementById('vol-sfx');
   const volSfxVal = document.getElementById('vol-sfx-val');
+  const pauseVolBgm = document.getElementById('pause-vol-bgm');
+  const pauseVolBgmVal = document.getElementById('pause-vol-bgm-val');
+  const pauseVolSfx = document.getElementById('pause-vol-sfx');
+  const pauseVolSfxVal = document.getElementById('pause-vol-sfx-val');
 
   // Load saved settings
   const saved = JSON.parse(localStorage.getItem('loldandugae_settings') || '{}');
-  if (saved.bgm != null) { volBgm.value = saved.bgm; volBgmVal.textContent = saved.bgm; AudioManager.setBgmVolume(saved.bgm / 100); }
-  if (saved.sfx != null) { volSfx.value = saved.sfx; volSfxVal.textContent = saved.sfx; AudioManager.setSfxVolume(saved.sfx / 100); }
+  if (saved.bgm != null) {
+    volBgm.value = saved.bgm; volBgmVal.textContent = saved.bgm;
+    pauseVolBgm.value = saved.bgm; pauseVolBgmVal.textContent = saved.bgm;
+    AudioManager.setBgmVolume(saved.bgm / 100);
+  }
+  if (saved.sfx != null) {
+    volSfx.value = saved.sfx; volSfxVal.textContent = saved.sfx;
+    pauseVolSfx.value = saved.sfx; pauseVolSfxVal.textContent = saved.sfx;
+    AudioManager.setSfxVolume(saved.sfx / 100);
+  }
 
   function saveSettings() {
     localStorage.setItem('loldandugae_settings', JSON.stringify({
@@ -364,16 +376,24 @@ window.onerror = function(msg, src, line, col, err) {
     }));
   }
 
-  volBgm.addEventListener('input', () => {
-    volBgmVal.textContent = volBgm.value;
-    AudioManager.setBgmVolume(Number(volBgm.value) / 100);
+  // Sync both settings panels (lobby + pause)
+  function syncBgmVolume(val) {
+    volBgm.value = val; volBgmVal.textContent = val;
+    pauseVolBgm.value = val; pauseVolBgmVal.textContent = val;
+    AudioManager.setBgmVolume(Number(val) / 100);
     saveSettings();
-  });
-  volSfx.addEventListener('input', () => {
-    volSfxVal.textContent = volSfx.value;
-    AudioManager.setSfxVolume(Number(volSfx.value) / 100);
+  }
+  function syncSfxVolume(val) {
+    volSfx.value = val; volSfxVal.textContent = val;
+    pauseVolSfx.value = val; pauseVolSfxVal.textContent = val;
+    AudioManager.setSfxVolume(Number(val) / 100);
     saveSettings();
-  });
+  }
+
+  volBgm.addEventListener('input', () => syncBgmVolume(volBgm.value));
+  volSfx.addEventListener('input', () => syncSfxVolume(volSfx.value));
+  pauseVolBgm.addEventListener('input', () => syncBgmVolume(pauseVolBgm.value));
+  pauseVolSfx.addEventListener('input', () => syncSfxVolume(pauseVolSfx.value));
 
   // Cursor style
   let currentCursor = saved.cursor || 'crosshair';
@@ -823,8 +843,24 @@ window.onerror = function(msg, src, line, col, err) {
     }, 800);
   }
 
-  // ========== BLOCK DEVTOOLS & ZOOM ==========
+  // ========== BLOCK DEVTOOLS & ZOOM + ESC SETTINGS ==========
   document.addEventListener('keydown', (e) => {
+    // ESC: open settings in lobby/mode, or do nothing in game (pause handled separately)
+    if (e.key === 'Escape') {
+      // Close settings if open
+      if (settingsOverlay.classList.contains('active')) {
+        settingsOverlay.classList.remove('active');
+        return;
+      }
+      // Open settings from lobby or mode select
+      const lobbyActive = screens.lobby.classList.contains('active');
+      const modeActive = screens.mode.classList.contains('active');
+      if (lobbyActive || modeActive) {
+        settingsOverlay.classList.add('active');
+        return;
+      }
+    }
+
     // Block F12, Ctrl+Shift+I/J/C (DevTools shortcuts)
     if (e.key === 'F12') { e.preventDefault(); return; }
     if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) { e.preventDefault(); return; }
