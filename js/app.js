@@ -128,13 +128,24 @@
   });
 
   // Handle auth state (initial session check + OAuth redirect callback)
+  let userHandled = false;
   async function handleUser(user) {
-    if (!user) return;
+    if (!user || userHandled) return;
+    userHandled = true;
     currentUserId = user.id || user.email;
 
-    // Check server-side ban before entering lobby
-    const banned = await checkBanForUser(currentUserId);
-    if (banned) return;
+    // Hide login loading
+    el.loginLoading.style.display = 'none';
+    el.btnGoogleLogin.style.display = 'none';
+
+    // Check server-side ban before entering lobby (with timeout)
+    try {
+      const banned = await Promise.race([
+        checkBanForUser(currentUserId),
+        new Promise(resolve => setTimeout(() => resolve(false), 3000)),
+      ]);
+      if (banned) return;
+    } catch { /* proceed on error */ }
 
     const meta = user.user_metadata || {};
     const nick = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Player');
@@ -161,15 +172,17 @@
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && session.user) {
-        handleUser(session.user);
+        await handleUser(session.user);
         return;
       }
     } catch (err) {
       console.error('Session check failed:', err);
     }
-    // No session — show login button
-    el.loginLoading.style.display = 'none';
-    el.btnGoogleLogin.style.display = '';
+    // No session (and not already handled by onAuthStateChange) — show login button
+    if (!userHandled) {
+      el.loginLoading.style.display = 'none';
+      el.btnGoogleLogin.style.display = '';
+    }
   })();
 
   // ========== MODE SELECT ==========
