@@ -44,14 +44,29 @@ class GameEngine {
     this.canvas.style.width = this.W + 'px';
     this.canvas.style.height = this.H + 'px';
 
+    // Tracking mode: hold-to-fire state
+    this._mouseDown = false;
+    this._trackFireTimer = 0; // accumulates dt, fires every interval
+    this._trackFireInterval = 100; // ms between each damage tick
+
     // Shared debounce for all input types (mouse + touch)
     this._lastClickTime = 0;
     this._boundClick = (e) => {
       e.preventDefault();
+      // Tracking mode: mousedown starts hold-fire, not single click
+      if (this.mode === 'tracking') {
+        this._mouseDown = true;
+        this._trackFireTimer = this._trackFireInterval; // fire immediately on press
+        return;
+      }
       const now = performance.now();
       if (now - this._lastClickTime < 50) return;
       this._lastClickTime = now;
       this._handleClick(e);
+    };
+    this._boundMouseUp = () => {
+      this._mouseDown = false;
+      this._trackFireTimer = 0;
     };
     this._boundTouch = (e) => {
       e.preventDefault();
@@ -76,6 +91,8 @@ class GameEngine {
       }
     };
     this.canvas.addEventListener('mousedown', this._boundClick);
+    this.canvas.addEventListener('mouseup', this._boundMouseUp);
+    window.addEventListener('mouseup', this._boundMouseUp); // catch release outside canvas
     this.canvas.addEventListener('mousemove', this._boundMouseMove);
     this.canvas.addEventListener('contextmenu', this._boundContextMenu);
     this.canvas.addEventListener('touchstart', this._boundTouch, { passive: false });
@@ -147,10 +164,16 @@ class GameEngine {
   destroy() {
     this.running = false;
     this.paused = false;
+    this._mouseDown = false;
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     if (this._boundClick) {
       this.canvas.removeEventListener('mousedown', this._boundClick);
       this._boundClick = null;
+    }
+    if (this._boundMouseUp) {
+      this.canvas.removeEventListener('mouseup', this._boundMouseUp);
+      window.removeEventListener('mouseup', this._boundMouseUp);
+      this._boundMouseUp = null;
     }
     if (this._boundMouseMove) {
       this.canvas.removeEventListener('mousemove', this._boundMouseMove);
@@ -242,7 +265,7 @@ class GameEngine {
     const y = hudHeight + padding + Math.random() * (this.H - hudHeight - padding * 2);
     this.target = {
       x, y,
-      size: this.targetSize * 1.3,
+      size: this.targetSize,
       faceImg,
       opacity: 1,
       vx: speed * dir,  // horizontal movement only
@@ -280,40 +303,48 @@ class GameEngine {
         this._trackTimeMs += dt;
       }
     }
+
+    // Hold-to-fire: deal damage while mouse held inside target
+    if (this._mouseDown && this._trackingInside && this.target) {
+      this._trackFireTimer += dt;
+      while (this._trackFireTimer >= this._trackFireInterval) {
+        this._trackFireTimer -= this._trackFireInterval;
+        t.hp -= 5; // 5 damage per tick (10 ticks/sec = 50 dps)
+        this.combo++;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        AudioManager.playHitSound();
+        if (t.hp <= 0) {
+          this.kills++;
+          this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
+          this._spawnTrackingTarget();
+          this._trackFireTimer = 0;
+          break;
+        }
+      }
+      this.onTick(this._getStats());
+    } else if (this._mouseDown && !this._trackingInside) {
+      // Holding outside target = miss + reset combo
+      if (this._trackFireTimer >= this._trackFireInterval) {
+        this.misses++;
+        this.combo = 0;
+        this._trackFireTimer = 0;
+        if (this._lastMousePos) {
+          this._spawnMissAnimation(this._lastMousePos.x, this._lastMousePos.y);
+        }
+        AudioManager.playMissSound();
+        this.onTick(this._getStats());
+      }
+      this._trackFireTimer += dt;
+    } else {
+      this._trackFireTimer = 0;
+    }
   }
 
   _handleClick(e) {
     if (!this.running) return;
 
-    // Tracking mode: click deals damage
-    if (this.mode === 'tracking') {
-      const rect = this.canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      if (this.target) {
-        const t = this.target;
-        const dist = Math.hypot(mx - t.x, my - t.y);
-        if (dist <= t.size / 2) {
-          t.hp -= 10; // 10 damage per click
-          AudioManager.playHitSound();
-          this.combo++;
-          if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-          if (t.hp <= 0) {
-            this.kills++;
-            this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
-            this._spawnTrackingTarget();
-          }
-          this.onTick(this._getStats());
-        } else {
-          this.misses++;
-          this.combo = 0;
-          this._spawnMissAnimation(mx, my);
-          AudioManager.playMissSound();
-          this.onTick(this._getStats());
-        }
-      }
-      return;
-    }
+    // Tracking mode: handled by hold-fire in _updateTrackingTarget
+    if (this.mode === 'tracking') return;
 
     const rect = this.canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
