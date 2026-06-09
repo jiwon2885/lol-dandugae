@@ -550,6 +550,12 @@ body {
   background: rgba(200,169,110,0.12);
   box-shadow: 0 0 10px var(--gold-glow);
 }
+.cursor-preview {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  pointer-events: none;
+}
 
 .lobby-actions {
   display: flex;

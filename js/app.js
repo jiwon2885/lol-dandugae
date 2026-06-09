@@ -295,9 +295,10 @@
 
   const CURSOR_MAP = {
     crosshair: 'crosshair',
-    dot: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='4' fill='%23e84057'/%3E%3C/svg%3E\") 12 12, crosshair",
-    circle: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23e84057' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23e84057'/%3E%3C/svg%3E\") 16 16, crosshair",
     default: 'default',
+    dot: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='4' fill='%23e84057'/%3E%3C/svg%3E\") 12 12, crosshair",
+    shield: "url('assets/cursor_shield.png') 4 4, crosshair",
+    gauntlet: "url('assets/cursor_gauntlet.png') 16 16, crosshair",
   };
 
   function applyCursor(type) {
