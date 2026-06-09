@@ -11,13 +11,6 @@ const Storage = (() => {
     localStorage.setItem(key, JSON.stringify(val));
   }
 
-  // --- PIN hash (simple hash for local-only use) ---
-  async function hashPin(pin) {
-    const data = new TextEncoder().encode(pin + '_guillotine_salt');
-    const buf = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
   // --- Profiles (localStorage) ---
   function getProfiles() { return _get(PROFILES_KEY) || {}; }
   function saveProfiles(p) { _set(PROFILES_KEY, p); }
@@ -57,9 +50,14 @@ const Storage = (() => {
   }
 
   // --- Score calculation ---
+  // kills×10 + accuracy bonus (max 50) + combo bonus + speed bonus (max 50)
   function calcScore(entry) {
-    const raw = entry.kills * 8 + (entry.accuracy || 0) * 0.3 + (entry.maxCombo || 0) * 2 + (entry.bonusPoints || 0) * 2;
-    return Math.round(raw / 5);
+    const killPts = (entry.kills || 0) * 10;
+    const accPts = Math.round((entry.accuracy || 0) * 0.5);
+    const comboPts = (entry.maxCombo || 0) * 2;
+    const reactionMs = entry.reactionMs || 999;
+    const speedPts = Math.max(0, Math.round((500 - reactionMs) * 0.1));
+    return killPts + accPts + comboPts + speedPts;
   }
 
   // --- Scores (서버 API) ---
@@ -88,5 +86,5 @@ const Storage = (() => {
     }
   }
 
-  return { hashPin, getProfile, createProfile, updateProfile, deleteProfile, calcScore, addScore, getRankings };
+  return { getProfile, createProfile, updateProfile, deleteProfile, calcScore, addScore, getRankings };
 })();

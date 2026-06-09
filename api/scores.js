@@ -51,8 +51,11 @@ export default async function handler(req, res) {
       const grade = allowedGrades.includes(entry.grade) ? entry.grade : 'C';
 
       // Recalculate score server-side (don't trust client score)
-      const raw = kills * 8 + accuracy * 0.3 + maxCombo * 2 + bonusPoints * 2;
-      const score = Math.round(raw / 5);
+      const killPts = kills * 10;
+      const accPts = Math.round(accuracy * 0.5);
+      const comboPts = maxCombo * 2;
+      const speedPts = Math.max(0, Math.round((500 - reactionMs) * 0.1));
+      const score = killPts + accPts + comboPts + speedPts;
 
       const scores = (await redis.get(SCORES_KEY)) || [];
       scores.push({

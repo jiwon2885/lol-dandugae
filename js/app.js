@@ -2,7 +2,7 @@
 (() => {
   // --- Supabase Auth ---
   const SUPABASE_URL = 'https://kksnddwgfnxaztboegax.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_QS_S7PVEV2rzbpx2EDGQRA_fI3lqtpz';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtrc25kZHdnZm54YXp0Ym9lZ2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA1MDcsImV4cCI6MjA5NjU3NjUwN30.Ba-t8iFrjJXpwV_vxUaEzdDzHtmIkv0WaMs5ZJWoTXA';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // --- DOM refs ---
@@ -15,13 +15,9 @@
   };
 
   const el = {
-    nicknameInput: document.getElementById('nickname-input'),
-    pinInput: document.getElementById('pin-input'),
-    pinLabel: document.getElementById('pin-label'),
-    pinConfirmSection: document.getElementById('pin-confirm-section'),
-    pinConfirmInput: document.getElementById('pin-confirm-input'),
-    btnLogin: document.getElementById('btn-login'),
+    btnGoogleLogin: document.getElementById('btn-google-login'),
     loginError: document.getElementById('login-error'),
+    loginLoading: document.getElementById('login-loading'),
 
     lobbyNickname: document.getElementById('lobby-nickname'),
     facePreview: document.getElementById('face-preview'),
@@ -56,7 +52,6 @@
     rankingBody: document.getElementById('ranking-body'),
     rankingEmpty: document.getElementById('ranking-empty'),
     btnRankingBack: document.getElementById('btn-ranking-back'),
-    btnGoogleLogin: document.getElementById('btn-google-login'),
   };
 
   // --- State ---
@@ -99,106 +94,62 @@
     screens[name].classList.add('active');
   }
 
-  // ========== LOGIN ==========
-  function updateLoginBtn() {
-    const nick = el.nicknameInput.value.trim();
-    const pin = el.pinInput.value;
-    el.btnLogin.disabled = !nick || pin.length !== 4;
-  }
-
-  el.nicknameInput.addEventListener('input', () => {
-    el.loginError.textContent = '';
-    const nick = el.nicknameInput.value.trim();
-    const profile = Storage.getProfile(nick);
-
-    if (profile) {
-      // Existing user — show PIN input only
-      el.pinLabel.textContent = 'PIN 입력';
-      el.pinConfirmSection.style.display = 'none';
-    } else if (nick) {
-      // New user — show PIN + confirm
-      el.pinLabel.textContent = 'PIN 설정 (4자리)';
-      el.pinConfirmSection.style.display = 'block';
-    }
-    updateLoginBtn();
-  });
-
-  el.pinInput.addEventListener('input', updateLoginBtn);
-
-  el.btnLogin.addEventListener('click', async () => {
-    const nick = el.nicknameInput.value.trim();
-    const pin = el.pinInput.value;
-    if (!nick || pin.length !== 4) return;
-    el.loginError.textContent = '';
-
-    const profile = Storage.getProfile(nick);
-
-    if (profile) {
-      // Existing: verify PIN
-      const hash = await Storage.hashPin(pin);
-      if (hash !== profile.pinHash) {
-        el.loginError.textContent = 'PIN이 일치하지 않습니다.';
-        return;
-      }
-      currentProfile = profile;
-    } else {
-      // New: confirm PIN
-      const pinConfirm = el.pinConfirmInput.value;
-      if (pin !== pinConfirm) {
-        el.loginError.textContent = 'PIN이 일치하지 않습니다.';
-        return;
-      }
-      const pinHash = await Storage.hashPin(pin);
-      currentProfile = Storage.createProfile(nick, pinHash);
-    }
-
-    currentNickname = nick;
-    el.pinInput.value = '';
-    el.pinConfirmInput.value = '';
-    enterLobby();
-  });
-
-  // Enter on input
-  el.nicknameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') el.btnLogin.click();
-  });
-  el.pinInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') el.btnLogin.click();
-  });
-
   // ========== GOOGLE LOGIN ==========
   el.btnGoogleLogin.addEventListener('click', async () => {
     el.loginError.textContent = '';
+    el.btnGoogleLogin.disabled = true;
+    el.btnGoogleLogin.textContent = '로그인 중...';
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + window.location.pathname },
     });
+
     if (error) {
       el.loginError.textContent = 'Google 로그인 실패: ' + error.message;
+      el.btnGoogleLogin.disabled = false;
+      el.btnGoogleLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인';
+    }
+    // If no error, the page will redirect to Google
+  });
+
+  // Handle auth state (initial session check + OAuth redirect callback)
+  function handleUser(user) {
+    if (!user) return;
+    const meta = user.user_metadata || {};
+    const nick = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Player');
+    currentNickname = nick;
+
+    if (!Storage.getProfile(nick)) {
+      Storage.createProfile(nick, null);
+    }
+    currentProfile = Storage.getProfile(nick);
+    enterLobby();
+  }
+
+  // Listen for auth state changes (catches OAuth redirect)
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session && session.user) {
+      handleUser(session.user);
     }
   });
 
-  // Check for existing Supabase session on load (OAuth redirect back)
+  // Also check existing session on page load
   (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session && session.user) {
-      const meta = session.user.user_metadata || {};
-      const baseName = meta.full_name || meta.name || session.user.email.split('@')[0];
-      // Use Google user ID suffix to avoid collision with PIN-based profiles
-      let nick = baseName;
-      const existing = Storage.getProfile(nick);
-      if (existing && existing.pinHash !== null && existing.googleUid !== session.user.id) {
-        // Name collision with a PIN user — append discriminator
-        nick = baseName + '#' + session.user.id.slice(0, 4);
+    el.loginLoading.style.display = 'block';
+    el.btnGoogleLogin.style.display = 'none';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        handleUser(session.user);
+        return;
       }
-      currentNickname = nick;
-      if (!Storage.getProfile(nick)) {
-        Storage.createProfile(nick, null);
-        Storage.updateProfile(nick, { googleUid: session.user.id });
-      }
-      currentProfile = Storage.getProfile(nick);
-      enterLobby();
+    } catch (err) {
+      console.error('Session check failed:', err);
     }
+    // No session — show login button
+    el.loginLoading.style.display = 'none';
+    el.btnGoogleLogin.style.display = '';
   })();
 
   // ========== LOBBY ==========
@@ -207,8 +158,6 @@
     el.lobbyNickname.textContent = currentNickname;
     renderFacePreviews();
   }
-
-  // Settings are fixed: 30s, 100px
 
   function renderFacePreviews() {
     el.facePreview.innerHTML = '';
@@ -364,7 +313,7 @@
       kills: stats.kills,
       accuracy: stats.accuracy,
       maxCombo: stats.maxCombo,
-      bonusPoints: stats.bonusPoints,
+      reactionMs: stats.avgReaction,
     });
 
     // Render result
@@ -386,12 +335,12 @@
       kills: stats.kills,
       accuracy: stats.accuracy,
       maxCombo: stats.maxCombo,
-      bonusPoints: stats.bonusPoints,
+      reactionMs: stats.avgReaction,
     });
-    if (score >= 130) return 'S+';
-    if (score >= 104) return 'S';
-    if (score >= 80) return 'A';
-    if (score >= 56) return 'B';
+    if (score >= 700) return 'S+';
+    if (score >= 550) return 'S';
+    if (score >= 400) return 'A';
+    if (score >= 250) return 'B';
     return 'C';
   }
 
@@ -504,7 +453,6 @@
       document.documentElement.requestFullscreen().then(() => {
         startResumeCountdown();
       }).catch(() => {
-        // If fullscreen denied, still allow resume
         startResumeCountdown();
       });
     } else {
@@ -546,17 +494,14 @@
 
   // ========== BLOCK BROWSER ZOOM ==========
   document.addEventListener('keydown', (e) => {
-    // Block Ctrl+Plus, Ctrl+Minus, Ctrl+0 (zoom shortcuts)
     if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
       e.preventDefault();
     }
   });
   document.addEventListener('wheel', (e) => {
-    // Block Ctrl+Scroll (zoom)
     if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
 
   // --- Init ---
   showScreen('login');
-  el.nicknameInput.focus();
 })();

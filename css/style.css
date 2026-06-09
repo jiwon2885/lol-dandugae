@@ -160,6 +160,12 @@ body {
   margin-top: 8px;
 }
 
+.loading-text {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+
 /* ===== Login Divider & Google Button ===== */
 .login-divider {
   display: flex;
