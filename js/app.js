@@ -114,8 +114,14 @@
   });
 
   // Handle auth state (initial session check + OAuth redirect callback)
-  function handleUser(user) {
+  async function handleUser(user) {
     if (!user) return;
+    currentUserId = user.id || user.email;
+
+    // Check server-side ban before entering lobby
+    const banned = await checkBanForUser(currentUserId);
+    if (banned) return;
+
     const meta = user.user_metadata || {};
     const nick = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Player');
     currentNickname = nick;
@@ -253,6 +259,7 @@
       onEnd: (stats) => showResult(stats),
     });
     gameEngine.start();
+    pauseCount = 0;
     updateHUD({ timeLeft: 30, kills: 0, combo: 0, avgReaction: 0 });
   }
 
@@ -396,6 +403,9 @@
 
   // ========== PAUSE / RESUME (fullscreen exit detection) ==========
   let gamePaused = false;
+  let pauseCount = 0;
+  const MAX_PAUSES = 3;
+  const PAUSE_PENALTY_SEC = 2; // seconds deducted per pause
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && gameEngine && gameEngine.running) {
@@ -425,9 +435,34 @@
 
   function pauseGame(reason) {
     if (!gameEngine || gamePaused) return;
+    pauseCount++;
     gamePaused = true;
     gameEngine.pause();
-    el.pauseDesc.textContent = reason || '';
+
+    // Time penalty for pausing
+    if (gameEngine._elapsedMs !== undefined) {
+      gameEngine._elapsedMs += PAUSE_PENALTY_SEC * 1000;
+      gameEngine.timeLeft = Math.max(0, gameEngine.duration - gameEngine._elapsedMs / 1000);
+      if (gameEngine.timeLeft <= 0) {
+        gamePaused = false;
+        gameEngine.timeLeft = 0;
+        gameEngine.stop();
+        return;
+      }
+    }
+
+    const pausesLeft = Math.max(0, MAX_PAUSES - pauseCount);
+    const penaltyMsg = pauseCount > 0 ? `\n일시정지 시 ${PAUSE_PENALTY_SEC}초 차감 (남은 횟수: ${pausesLeft})` : '';
+    el.pauseDesc.textContent = (reason || '') + penaltyMsg;
+
+    // If no pauses left, disable resume and force lobby exit
+    if (pauseCount >= MAX_PAUSES) {
+      el.pauseDesc.textContent = (reason || '') + '\n일시정지 횟수를 모두 소진했습니다.\n로비로 나가주세요.';
+      el.btnResume.style.display = 'none';
+    } else {
+      el.btnResume.style.display = '';
+    }
+
     el.pauseOverlay.classList.add('active');
   }
 
@@ -489,7 +524,11 @@
         activeCountdownInterval = null;
         el.countdownOverlay.classList.remove('active');
         gamePaused = false;
-        if (gameEngine) gameEngine.resume();
+        if (gameEngine) {
+          // Respawn target at new position to prevent pre-aiming
+          gameEngine._spawnTarget();
+          gameEngine.resume();
+        }
       }
     }, 800);
   }
@@ -512,16 +551,16 @@
     if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
 
-  // ========== DEVTOOLS BAN SYSTEM ==========
-  const BAN_KEY = 'guillotine_ban_until';
-  const BAN_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+  // ========== DEVTOOLS BAN SYSTEM (server-side) ==========
+  const BAN_API = '/api/ban';
+  let currentUserId = null; // set after login
 
   const banOverlay = document.getElementById('ban-overlay');
   const banMinutes = document.getElementById('ban-minutes');
   const banSeconds = document.getElementById('ban-seconds');
   let banTimerInterval = null;
 
-  function activateBan() {
+  async function activateBan() {
     // Stop game if running
     if (gameEngine && gameEngine.running) {
       gameEngine.pause();
@@ -533,13 +572,23 @@
     }
     AudioManager.stopBGM();
 
-    const banUntil = Date.now() + BAN_DURATION_MS;
-    localStorage.setItem(BAN_KEY, String(banUntil));
-    showBanScreen(banUntil);
+    if (!currentUserId) return;
+    try {
+      const resp = await fetch(BAN_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId }),
+      });
+      const data = await resp.json();
+      if (data.banUntil) showBanScreen(data.banUntil);
+    } catch (err) {
+      console.error('Ban API failed:', err);
+      // Fallback: show ban with estimated time
+      showBanScreen(Date.now() + 30 * 60 * 1000);
+    }
   }
 
   function showBanScreen(banUntil) {
-    // Hide everything, show ban
     Object.values(screens).forEach(s => s.classList.remove('active'));
     banOverlay.style.display = 'flex';
 
@@ -547,13 +596,10 @@
     function updateBanTimer() {
       const remaining = banUntil - Date.now();
       if (remaining <= 0) {
-        // Ban expired
         clearInterval(banTimerInterval);
         banTimerInterval = null;
-        localStorage.removeItem(BAN_KEY);
         banOverlay.style.display = 'none';
         showScreen('login');
-        // Re-check session
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session && session.user) handleUser(session.user);
         });
@@ -568,13 +614,20 @@
     banTimerInterval = setInterval(updateBanTimer, 1000);
   }
 
-  // Check ban on page load
-  (function checkBan() {
-    const banUntil = Number(localStorage.getItem(BAN_KEY));
-    if (banUntil && Date.now() < banUntil) {
-      showBanScreen(banUntil);
+  async function checkBanForUser(userId) {
+    if (!userId) return false;
+    try {
+      const resp = await fetch(BAN_API + '?userId=' + encodeURIComponent(userId));
+      const data = await resp.json();
+      if (data.banned && data.banUntil > Date.now()) {
+        showBanScreen(data.banUntil);
+        return true;
+      }
+    } catch (err) {
+      console.error('Ban check failed:', err);
     }
-  })();
+    return false;
+  }
 
   // Detect devtools via debugger timing
   setInterval(() => {
