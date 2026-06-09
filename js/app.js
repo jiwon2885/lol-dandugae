@@ -188,15 +188,15 @@
 
   // ========== LOBBY ==========
   const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity };
-  const MODE_LABELS = { grid: '그리드', triple: '트리플 그리드', tracking: '트래킹' };
+  const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking' };
 
   function enterLobby() {
     showScreen('lobby');
     el.lobbyNickname.textContent = currentNickname;
 
-    // Show mode badge
-    const modeBadge = document.getElementById('lobby-mode-badge');
-    if (modeBadge) modeBadge.textContent = MODE_LABELS[currentMode] || '';
+    // Show mode name at top
+    const modeName = document.getElementById('lobby-mode-name');
+    if (modeName) modeName.textContent = MODE_LABELS[currentMode] || '';
 
     renderFacePreviews();
   }
@@ -370,6 +370,10 @@
     const isTracking = currentMode === 'tracking';
     document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
 
+    // Set in-game mode badge
+    const hudModeBadge = document.getElementById('hud-mode-badge');
+    if (hudModeBadge) hudModeBadge.textContent = MODE_LABELS[currentMode] || '';
+
     // Force fullscreen to prevent window shrinking exploit
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -504,6 +508,7 @@
       bonusPoints: stats.bonusPoints,
       grade,
       kpm: stats.kpm,
+      mode: currentMode,
       clickLog: stats.clickLog || [],
       mousePath: stats.mousePath || [],
     }).then(result => {
@@ -559,16 +564,40 @@
 
   // ========== RANKING ==========
   const podiumEl = document.getElementById('podium');
+  let rankingMode = 'grid';
+
+  // Ranking tab switching
+  document.querySelectorAll('.ranking-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      rankingMode = tab.dataset.mode;
+      document.querySelectorAll('.ranking-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === rankingMode));
+      loadRankingData(rankingMode);
+    });
+  });
 
   async function showRanking() {
     showScreen('ranking');
+    rankingMode = currentMode;
+    // Set active tab
+    document.querySelectorAll('.ranking-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === rankingMode));
+    // Show mode label
+    const modeLabel = document.getElementById('ranking-mode-label');
+    if (modeLabel) modeLabel.textContent = MODE_LABELS[rankingMode] || '';
+    loadRankingData(rankingMode);
+  }
+
+  async function loadRankingData(mode) {
     el.rankingBody.innerHTML = '';
     podiumEl.innerHTML = '';
     el.rankingEmpty.style.display = 'none';
     el.rankingEmpty.textContent = '로딩 중...';
     el.rankingEmpty.style.display = 'block';
 
-    const rankings = await Storage.getRankings();
+    // Update mode label
+    const modeLabel = document.getElementById('ranking-mode-label');
+    if (modeLabel) modeLabel.textContent = MODE_LABELS[mode] || '';
+
+    const rankings = await Storage.getRankings(mode);
 
     if (rankings.length === 0) {
       el.rankingBody.innerHTML = '';

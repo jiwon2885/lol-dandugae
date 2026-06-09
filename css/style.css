@@ -317,6 +317,15 @@ body {
   letter-spacing: 3px;
 }
 
+.mode-subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: -24px;
+  margin-bottom: 36px;
+  letter-spacing: 0.5px;
+}
+
 .mode-cards {
   display: flex;
   gap: 20px;
@@ -327,11 +336,10 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-lg);
-  padding: 36px 28px 30px;
-  width: 220px;
+  width: 240px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow-card);
   position: relative;
@@ -343,41 +351,92 @@ body {
   top: 0; left: 0; right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(200,169,110,0.3) 50%, transparent 100%);
+  z-index: 2;
 }
 .mode-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(1.02);
   border-color: var(--gold);
-  box-shadow: var(--shadow-heavy), 0 0 30px var(--gold-glow);
+  box-shadow: var(--shadow-heavy), 0 0 40px var(--gold-glow);
+}
+.mode-card:hover .mode-card-bg {
+  opacity: 0.5;
+  transform: scale(1.05);
 }
 .mode-card:active {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
 }
 
-.mode-icon {
-  font-size: 2.2rem;
-  margin-bottom: 14px;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+/* Background preview area */
+.mode-card-bg {
+  width: 100%;
+  height: 140px;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  transition: all 0.4s ease;
+  position: relative;
 }
+.mode-card-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, var(--bg-card) 100%);
+}
+
+/* Mode-specific backgrounds using generated gradients as placeholders */
+.mode-bg-grid {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(232,64,87,0.4) 0%, transparent 35%),
+    radial-gradient(circle at 30% 40%, rgba(180,20,30,0.2) 0%, transparent 25%),
+    radial-gradient(circle at 70% 60%, rgba(180,20,30,0.15) 0%, transparent 25%),
+    url('../assets/bg.png');
+  background-size: cover;
+  background-position: center;
+}
+.mode-bg-triple {
+  background:
+    radial-gradient(circle at 25% 45%, rgba(232,64,87,0.35) 0%, transparent 22%),
+    radial-gradient(circle at 55% 35%, rgba(232,64,87,0.35) 0%, transparent 22%),
+    radial-gradient(circle at 75% 55%, rgba(232,64,87,0.35) 0%, transparent 22%),
+    url('../assets/bg.png');
+  background-size: cover;
+  background-position: center;
+}
+.mode-bg-tracking {
+  background:
+    radial-gradient(ellipse at 40% 50%, rgba(73,178,108,0.3) 0%, transparent 30%),
+    radial-gradient(circle at 60% 50%, rgba(232,64,87,0.3) 0%, transparent 25%),
+    linear-gradient(90deg, transparent, rgba(73,178,108,0.1) 30%, rgba(73,178,108,0.1) 70%, transparent),
+    url('../assets/bg.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.mode-card-content {
+  padding: 16px 24px 26px;
+  position: relative;
+}
+
 .mode-card h3 {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   color: var(--text);
   margin-bottom: 10px;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.5px;
 }
 .mode-desc {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 14px;
 }
 .mode-tag {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: 12px;
   background: rgba(200,169,110,0.1);
   color: var(--gold);
@@ -392,6 +451,36 @@ body {
   content: '';
   position: absolute; inset: 0;
   background: radial-gradient(ellipse at 50% 30%, rgba(10,14,20,0.72) 0%, rgba(8,11,18,0.92) 70%);
+}
+
+.lobby-mode-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.lobby-mode-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(200,169,110,0.25);
+  letter-spacing: 2px;
+}
+
+.btn-mode-back {
+  padding: 6px 16px;
+  border: 1px solid rgba(200,170,110,0.2);
+  border-radius: 8px;
+  background: rgba(200,169,110,0.06);
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.3px;
+}
+.btn-mode-back:hover {
+  background: rgba(200,169,110,0.14);
+  border-color: rgba(200,170,110,0.4);
 }
 
 .lobby-container {
@@ -424,16 +513,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.mode-badge {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--gold);
-  background: rgba(200,169,110,0.1);
-  border: 1px solid rgba(200,169,110,0.2);
-  padding: 4px 12px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
 }
 .lobby-header h2 {
   font-family: var(--font-display);
@@ -728,6 +807,22 @@ body {
   line-height: 1.2;
 }
 
+.hud-mode-badge {
+  position: absolute;
+  right: 72px;
+  top: 18px;
+  pointer-events: none;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  background: rgba(13, 17, 23, 0.5);
+  border: 1px solid rgba(200, 170, 110, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(6px);
+}
+
 .hud-pause {
   position: absolute;
   right: 16px;
@@ -998,6 +1093,48 @@ body {
   text-align: center;
   text-shadow: 0 0 50px rgba(200,169,110,0.3), 0 0 100px rgba(200,169,110,0.1);
   letter-spacing: 6px;
+}
+
+/* ===== Ranking Mode Label ===== */
+.ranking-mode-label {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+/* ===== Ranking Tabs ===== */
+.ranking-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+.ranking-tab {
+  padding: 9px 22px;
+  border: 1px solid rgba(200,170,110,0.15);
+  border-radius: 8px;
+  background: rgba(200,169,110,0.04);
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.3px;
+}
+.ranking-tab:hover {
+  background: rgba(200,169,110,0.1);
+  border-color: rgba(200,170,110,0.3);
+  color: var(--text-secondary);
+}
+.ranking-tab.active {
+  background: rgba(200,169,110,0.15);
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 
 /* ===== Podium ===== */

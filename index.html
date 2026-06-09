@@ -44,25 +44,32 @@
   <!-- ===== 모드 선택 화면 ===== -->
   <div id="screen-mode" class="screen">
     <div class="mode-container">
-      <h2 class="mode-title">종목 선택</h2>
+      <h2 class="mode-title">SELECT MODE</h2>
+      <p class="mode-subtitle">종목을 선택하세요</p>
       <div class="mode-cards">
         <div class="mode-card" data-mode="grid">
-          <div class="mode-icon">🎯</div>
-          <h3>그리드</h3>
-          <p class="mode-desc">타겟이 하나씩 랜덤 위치에 출현<br>클릭하여 처형하라</p>
-          <span class="mode-tag">기본</span>
+          <div class="mode-card-bg mode-bg-grid"></div>
+          <div class="mode-card-content">
+            <h3>GRID SHOT</h3>
+            <p class="mode-desc">랜덤 위치에 하나씩 출현하는 타겟을 빠르게 클릭하여 제거하라. 정확한 에임과 빠른 반응속도가 핵심이다.</p>
+            <span class="mode-tag">CLASSIC</span>
+          </div>
         </div>
         <div class="mode-card" data-mode="triple">
-          <div class="mode-icon">🎯🎯🎯</div>
-          <h3>트리플 그리드</h3>
-          <p class="mode-desc">타겟 3개가 동시에 출현<br>빠른 반응이 필요하다</p>
-          <span class="mode-tag">하드</span>
+          <div class="mode-card-bg mode-bg-triple"></div>
+          <div class="mode-card-content">
+            <h3>TRIPLE SHOT</h3>
+            <p class="mode-desc">3개의 타겟이 동시에 출현하며, 하나를 처리하면 즉시 새로운 타겟이 생성된다. 시야와 판단력이 시험된다.</p>
+            <span class="mode-tag">HARD</span>
+          </div>
         </div>
         <div class="mode-card" data-mode="tracking">
-          <div class="mode-icon">🔄</div>
-          <h3>트래킹</h3>
-          <p class="mode-desc">움직이는 타겟을 추적하며 클릭<br>HP를 깎아 처형하라</p>
-          <span class="mode-tag">집중</span>
+          <div class="mode-card-bg mode-bg-tracking"></div>
+          <div class="mode-card-content">
+            <h3>TRACKING</h3>
+            <p class="mode-desc">수평으로 이동하는 타겟을 추적하며 클릭하여 HP를 깎아라. 갈수록 빨라지는 타겟을 놓치지 마라.</p>
+            <span class="mode-tag">FOCUS</span>
+          </div>
         </div>
       </div>
     </div>
@@ -71,14 +78,15 @@
   <!-- ===== 로비 화면 ===== -->
   <div id="screen-lobby" class="screen">
     <div class="lobby-container">
+      <div class="lobby-mode-header">
+        <span id="lobby-mode-name" class="lobby-mode-name"></span>
+      </div>
       <div class="lobby-header">
         <div class="lobby-header-left">
-          <h2>로비</h2>
-          <span id="lobby-mode-badge" class="mode-badge"></span>
+          <button id="btn-change-mode" class="btn-mode-back">← 모드선택</button>
         </div>
         <div class="lobby-header-right">
           <span id="lobby-nickname" class="nick-badge"></span>
-          <button id="btn-change-mode" class="btn-face-toggle">모드 변경</button>
         </div>
       </div>
 
@@ -149,6 +157,7 @@
       <div class="hud-item hud-grid"><span class="hud-label">반응속도</span><span id="hud-reaction">-</span></div>
       <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">트래킹</span><span id="hud-track-time">0.0s</span></div>
       <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">정확도</span><span id="hud-track-acc">0%</span></div>
+      <span id="hud-mode-badge" class="hud-mode-badge"></span>
       <button id="btn-pause" class="hud-pause" title="일시정지">⏸</button>
     </div>
     <canvas id="game-canvas"></canvas>
@@ -194,6 +203,12 @@
   <div id="screen-ranking" class="screen">
     <div class="ranking-container">
       <h2 class="ranking-title">RANKING</h2>
+      <div id="ranking-mode-label" class="ranking-mode-label"></div>
+      <div class="ranking-tabs">
+        <button class="ranking-tab active" data-mode="grid">Grid Shot</button>
+        <button class="ranking-tab" data-mode="triple">Triple Shot</button>
+        <button class="ranking-tab" data-mode="tracking">Tracking</button>
+      </div>
       <div id="podium" class="podium"></div>
       <div class="ranking-table-wrap">
         <table id="ranking-table">

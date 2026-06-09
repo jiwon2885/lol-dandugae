@@ -79,9 +79,10 @@ const Storage = (() => {
     }
   }
 
-  async function getRankings() {
+  async function getRankings(mode) {
     try {
-      const res = await fetch(API_URL);
+      const url = mode ? API_URL + '?mode=' + encodeURIComponent(mode) : API_URL;
+      const res = await fetch(url);
       if (!res.ok) throw new Error('API error');
       return await res.json();
     } catch (err) {

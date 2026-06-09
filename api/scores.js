@@ -23,9 +23,14 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const scores = (await redis.get(SCORES_KEY)) || [];
+      const modeFilter = req.query.mode || null;
+      // Filter by mode if specified
+      const filtered = modeFilter
+        ? scores.filter(s => s.mode === modeFilter)
+        : scores.filter(s => !s.mode || s.mode === 'grid'); // default: grid (legacy)
       // Best score per player only
       const bestMap = {};
-      for (const s of scores) {
+      for (const s of filtered) {
         if (!bestMap[s.nickname] || s.score > bestMap[s.nickname].score) {
           bestMap[s.nickname] = s;
         }
@@ -57,6 +62,8 @@ export default async function handler(req, res) {
       const kpm = Math.max(0, Math.min(Math.floor(Number(entry.kpm) || 0), 240));
       const allowedGrades = ['C', 'B', 'A', 'S', 'S+'];
       const grade = allowedGrades.includes(entry.grade) ? entry.grade : 'C';
+      const allowedModes = ['grid', 'triple', 'tracking'];
+      const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
 
       // Anti-cheat: validate click log
       const clickLog = Array.isArray(entry.clickLog) ? entry.clickLog : [];
@@ -237,6 +244,7 @@ export default async function handler(req, res) {
         grade,
         kpm,
         score,
+        mode,
         id: Date.now(),
         createdAt: Date.now(),
       });
