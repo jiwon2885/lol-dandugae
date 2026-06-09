@@ -422,43 +422,33 @@ body {
   width: 64px; height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid rgba(200,169,110,0.3);
+  border: 2.5px solid rgba(255,255,255,0.08);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: grayscale(0.85) brightness(0.45);
 }
 .face-thumb-wrap:hover .face-thumb {
   transform: scale(1.08);
+  filter: grayscale(0.4) brightness(0.65);
+  border-color: rgba(200,169,110,0.25);
 }
 
 /* Selected state */
 .face-thumb-wrap.selected .face-thumb {
-  border-color: var(--gold);
-  box-shadow: 0 0 14px var(--gold-glow);
+  filter: grayscale(0) brightness(1.1) saturate(1.1);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 16px var(--gold-glow), 0 0 32px rgba(200,169,110,0.12);
+  animation: faceSelect 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.face-thumb-wrap.selected::after {
-  content: '✓';
-  position: absolute;
-  bottom: -2px; right: -2px;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: var(--gold);
-  color: #0a0e14;
-  font-size: 11px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+.face-thumb-wrap.selected:hover .face-thumb {
+  filter: grayscale(0) brightness(1.15) saturate(1.15);
+  transform: scale(1.08);
 }
 
-/* Deselected state */
-.face-thumb-wrap:not(.selected) .face-thumb {
-  filter: grayscale(0.8) brightness(0.5);
-  border-color: rgba(255,255,255,0.08);
-}
-.face-thumb-wrap:not(.selected):hover .face-thumb {
-  filter: grayscale(0.4) brightness(0.7);
-  border-color: rgba(200,169,110,0.2);
+@keyframes faceSelect {
+  0% { transform: scale(0.85); filter: grayscale(0.85) brightness(0.45); box-shadow: none; }
+  50% { transform: scale(1.15); filter: grayscale(0) brightness(1.25); box-shadow: 0 0 28px rgba(200,169,110,0.5); }
+  100% { transform: scale(1); filter: grayscale(0) brightness(1.1) saturate(1.1); box-shadow: 0 0 16px var(--gold-glow); }
 }
 
 .face-warn {
