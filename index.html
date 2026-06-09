@@ -40,6 +40,17 @@
       <p id="login-loading" class="loading-text" style="display:none;">로그인 확인 중...</p>
     </div>
   </div>
+  <script>
+    // Hard fallback: if login is still loading after 4s, force show login button
+    setTimeout(function() {
+      var loading = document.getElementById('login-loading');
+      var btn = document.getElementById('btn-google-login');
+      if (loading && loading.style.display !== 'none') {
+        loading.style.display = 'none';
+        if (btn) btn.style.display = '';
+      }
+    }, 4000);
+  </script>
 
   <!-- ===== 모드 선택 화면 ===== -->
   <div id="screen-mode" class="screen">

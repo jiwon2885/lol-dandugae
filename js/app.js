@@ -158,9 +158,9 @@
     enterModeSelect();
   }
 
-  // Listen for auth state changes (catches OAuth redirect)
+  // Listen for auth state changes (catches OAuth redirect + initial session)
   supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session && session.user) {
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && session.user) {
       handleUser(session.user);
     }
   });
