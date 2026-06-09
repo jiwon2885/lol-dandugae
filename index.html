@@ -41,12 +41,45 @@
     </div>
   </div>
 
+  <!-- ===== 모드 선택 화면 ===== -->
+  <div id="screen-mode" class="screen">
+    <div class="mode-container">
+      <h2 class="mode-title">종목 선택</h2>
+      <div class="mode-cards">
+        <div class="mode-card" data-mode="grid">
+          <div class="mode-icon">🎯</div>
+          <h3>그리드</h3>
+          <p class="mode-desc">타겟이 하나씩 랜덤 위치에 출현<br>클릭하여 처형하라</p>
+          <span class="mode-tag">기본</span>
+        </div>
+        <div class="mode-card" data-mode="triple">
+          <div class="mode-icon">🎯🎯🎯</div>
+          <h3>트리플 그리드</h3>
+          <p class="mode-desc">타겟 3개가 동시에 출현<br>빠른 반응이 필요하다</p>
+          <span class="mode-tag">하드</span>
+        </div>
+        <div class="mode-card" data-mode="tracking">
+          <div class="mode-icon">🔄</div>
+          <h3>트래킹</h3>
+          <p class="mode-desc">움직이는 타겟을 추적하며 클릭<br>HP를 깎아 처형하라</p>
+          <span class="mode-tag">집중</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== 로비 화면 ===== -->
   <div id="screen-lobby" class="screen">
     <div class="lobby-container">
       <div class="lobby-header">
-        <h2>로비</h2>
-        <span id="lobby-nickname" class="nick-badge"></span>
+        <div class="lobby-header-left">
+          <h2>로비</h2>
+          <span id="lobby-mode-badge" class="mode-badge"></span>
+        </div>
+        <div class="lobby-header-right">
+          <span id="lobby-nickname" class="nick-badge"></span>
+          <button id="btn-change-mode" class="btn-face-toggle">모드 변경</button>
+        </div>
       </div>
 
       <div class="lobby-card">
@@ -111,9 +144,11 @@
   <div id="screen-game" class="screen">
     <div id="game-hud">
       <div class="hud-item"><span class="hud-label">시간</span><span id="hud-time">30</span></div>
-      <div class="hud-item"><span class="hud-label">격파</span><span id="hud-kills">0</span></div>
-      <div class="hud-item"><span class="hud-label">콤보</span><span id="hud-combo">0</span></div>
-      <div class="hud-item"><span class="hud-label">반응속도</span><span id="hud-reaction">-</span></div>
+      <div class="hud-item hud-grid"><span class="hud-label">격파</span><span id="hud-kills">0</span></div>
+      <div class="hud-item hud-grid"><span class="hud-label">콤보</span><span id="hud-combo">0</span></div>
+      <div class="hud-item hud-grid"><span class="hud-label">반응속도</span><span id="hud-reaction">-</span></div>
+      <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">트래킹</span><span id="hud-track-time">0.0s</span></div>
+      <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">정확도</span><span id="hud-track-acc">0%</span></div>
       <button id="btn-pause" class="hud-pause" title="일시정지">⏸</button>
     </div>
     <canvas id="game-canvas"></canvas>

@@ -3,6 +3,7 @@ class GameEngine {
   constructor(canvas, options) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    this.mode = options.mode || 'grid'; // 'grid' | 'triple' | 'tracking'
     this.faceImages = options.faceImages || [];
     this.duration = options.duration || 30;
     this.targetSize = options.targetSize || 100;
@@ -17,8 +18,13 @@ class GameEngine {
     this.reactionTimes = [];
     this.timeLeft = this.duration;
     this.running = false;
-    this.target = null;
+    this.target = null;  // grid mode single target
+    this.targets = [];   // triple mode: array of 3 targets
     this.targetSpawnTime = 0;
+
+    // Tracking mode state
+    this._trackTimeMs = 0;       // total ms cursor was inside target
+    this._trackingInside = false; // is cursor currently inside?
     this.animations = [];
     this.rafId = null;
     this.lastTime = 0;
@@ -94,8 +100,19 @@ class GameEngine {
     this._lastMousePos = null;
     this._mouseSampleTimer = 0;
     this._gameStartTime = this._perfNow();
+    this._trackTimeMs = 0;
+    this._trackingInside = false;
     this.animations = [];
-    this._spawnTarget();
+
+    if (this.mode === 'triple') {
+      this.targets = [];
+      for (let i = 0; i < 3; i++) this._spawnTripleTarget(i);
+    } else if (this.mode === 'tracking') {
+      this._spawnTrackingTarget();
+    } else {
+      this._spawnTarget();
+    }
+
     this.lastTime = this._perfNow();
     this._loop(this.lastTime);
   }
@@ -157,6 +174,7 @@ class GameEngine {
     const accuracy = totalAttempts > 0 ? Math.round((this.kills / totalAttempts) * 100) : 0;
     const elapsed = this.duration - this.timeLeft;
     const kpm = elapsed > 0 ? Math.round((this.kills / elapsed) * 60) : 0;
+    const trackAccuracy = this._elapsedMs > 0 ? Math.round((this._trackTimeMs / this._elapsedMs) * 100) : 0;
     return {
       kills: this.kills,
       misses: this.misses,
@@ -170,6 +188,9 @@ class GameEngine {
       kpm,
       clickLog: this._clickLog,
       mousePath: this._mousePath,
+      trackTime: this._trackTimeMs,
+      trackAccuracy,
+      mode: this.mode,
     };
   }
 
@@ -186,29 +207,162 @@ class GameEngine {
     this.targetSpawnTime = performance.now();
   }
 
+  // === Triple mode: spawn one of 3 target slots ===
+  _spawnTripleTarget(slot) {
+    const padding = this.targetSize;
+    const hudHeight = 70;
+    let x, y, tooClose;
+    // Avoid overlapping targets
+    do {
+      tooClose = false;
+      x = padding + Math.random() * (this.W - padding * 2);
+      y = hudHeight + padding + Math.random() * (this.H - hudHeight - padding * 2);
+      for (let i = 0; i < this.targets.length; i++) {
+        if (i === slot || !this.targets[i]) continue;
+        const dist = Math.hypot(x - this.targets[i].x, y - this.targets[i].y);
+        if (dist < this.targetSize * 2) { tooClose = true; break; }
+      }
+    } while (tooClose);
+    const faceImg = this.faceImages.length
+      ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
+      : null;
+    this.targets[slot] = { x, y, size: this.targetSize, faceImg, opacity: 1, spawnTime: performance.now() };
+  }
+
+  // === Tracking mode: spawn a moving target with HP ===
+  _spawnTrackingTarget() {
+    const padding = this.targetSize * 1.5;
+    const hudHeight = 70;
+    const faceImg = this.faceImages.length
+      ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
+      : null;
+    const speed = 2.5;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const x = padding + Math.random() * (this.W - padding * 2);
+    const y = hudHeight + padding + Math.random() * (this.H - hudHeight - padding * 2);
+    this.target = {
+      x, y,
+      size: this.targetSize * 1.3,
+      faceImg,
+      opacity: 1,
+      vx: speed * dir,  // horizontal movement only
+      vy: 0,
+      hp: 100,
+      maxHp: 100,
+    };
+  }
+
+  _updateTrackingTarget(dt) {
+    if (!this.target || !this.running) return;
+    const t = this.target;
+    const r = t.size / 2;
+
+    // Horizontal movement
+    const speedMult = 1 + (this._elapsedMs / (this.duration * 1000)) * 1.2;
+    const baseSpeed = 2.5 * speedMult;
+    const dir = t.vx > 0 ? 1 : -1;
+    t.vx = baseSpeed * dir;
+
+    t.x += t.vx * (dt / 16.67);
+
+    // Bounce off horizontal walls
+    if (t.x - r < 0) { t.x = r; t.vx = Math.abs(t.vx); }
+    if (t.x + r > this.W) { t.x = this.W - r; t.vx = -Math.abs(t.vx); }
+
+    // Random direction flip occasionally
+    if (Math.random() < 0.005) t.vx = -t.vx;
+
+    // Check if cursor is inside
+    if (this._lastMousePos) {
+      const dist = Math.hypot(this._lastMousePos.x - t.x, this._lastMousePos.y - t.y);
+      this._trackingInside = dist <= r;
+      if (this._trackingInside) {
+        this._trackTimeMs += dt;
+      }
+    }
+  }
+
   _handleClick(e) {
     if (!this.running) return;
 
-    // Canvas CSS size = pixel size (1:1), so no scale needed
-    // Just offset by canvas position
+    // Tracking mode: click deals damage
+    if (this.mode === 'tracking') {
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      if (this.target) {
+        const t = this.target;
+        const dist = Math.hypot(mx - t.x, my - t.y);
+        if (dist <= t.size / 2) {
+          t.hp -= 10; // 10 damage per click
+          AudioManager.playHitSound();
+          this.combo++;
+          if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+          if (t.hp <= 0) {
+            this.kills++;
+            this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
+            this._spawnTrackingTarget();
+          }
+          this.onTick(this._getStats());
+        } else {
+          this.misses++;
+          this.combo = 0;
+          this._spawnMissAnimation(mx, my);
+          AudioManager.playMissSound();
+          this.onTick(this._getStats());
+        }
+      }
+      return;
+    }
+
     const rect = this.canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-
     const clickTime = this._perfNow() - this._gameStartTime;
 
+    // Triple mode: check all 3 targets
+    if (this.mode === 'triple') {
+      for (let i = 0; i < this.targets.length; i++) {
+        const t = this.targets[i];
+        if (!t) continue;
+        const dist = Math.hypot(mx - t.x, my - t.y);
+        if (dist <= t.size / 2) {
+          const reaction = this._perfNow() - t.spawnTime;
+          this.reactionTimes.push(Math.round(reaction));
+          this._clickLog.push({ t: Math.round(clickTime), r: Math.round(reaction), h: 1, d: Math.round(dist), tx: Math.round(t.x), ty: Math.round(t.y) });
+          this.combo++;
+          let bonus = 0;
+          if (this.combo >= 30) bonus = 3;
+          else if (this.combo >= 15) bonus = 2;
+          else if (this.combo >= 5) bonus = 1;
+          this.kills += 1;
+          this.bonusPoints += bonus;
+          if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+          this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
+          AudioManager.playHitSound();
+          this._spawnTripleTarget(i);
+          this.onTick(this._getStats());
+          return;
+        }
+      }
+      // MISS
+      this.misses++;
+      this.combo = 0;
+      this._clickLog.push({ t: Math.round(clickTime), h: 0 });
+      this._spawnMissAnimation(mx, my);
+      AudioManager.playMissSound();
+      this.onTick(this._getStats());
+      return;
+    }
+
+    // Grid mode (default)
     if (this.target) {
       const t = this.target;
       const dist = Math.hypot(mx - t.x, my - t.y);
       if (dist <= t.size / 2) {
-        // HIT
         const reaction = this._perfNow() - this.targetSpawnTime;
         this.reactionTimes.push(Math.round(reaction));
-        // d: hit offset from center, tx/ty: target pos (for Fitts's law)
-        this._clickLog.push({
-          t: Math.round(clickTime), r: Math.round(reaction), h: 1,
-          d: Math.round(dist), tx: Math.round(t.x), ty: Math.round(t.y),
-        });
+        this._clickLog.push({ t: Math.round(clickTime), r: Math.round(reaction), h: 1, d: Math.round(dist), tx: Math.round(t.x), ty: Math.round(t.y) });
         this.combo++;
         let bonus = 0;
         if (this.combo >= 30) bonus = 3;
@@ -217,7 +371,6 @@ class GameEngine {
         this.kills += 1;
         this.bonusPoints += bonus;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-
         this._spawnBladeAnimation(t.x, t.y, t.size, t.faceImg);
         AudioManager.playHitSound();
         this._spawnTarget();
@@ -292,9 +445,22 @@ class GameEngine {
       }
     }
 
+    // Tracking mode: update target movement
+    if (this.mode === 'tracking' && this.running) {
+      this._updateTrackingTarget(dt);
+    }
+
     this.ctx.clearRect(0, 0, this.W, this.H);
     this._drawBg();
-    this._drawTarget();
+
+    if (this.mode === 'triple') {
+      this._drawTripleTargets();
+    } else if (this.mode === 'tracking') {
+      this._drawTrackingTarget();
+    } else {
+      this._drawTarget();
+    }
+
     this._updateAnimations(now);
   }
 
@@ -364,6 +530,104 @@ class GameEngine {
       ctx.lineTo(t.x, t.y + r * 0.6);
       ctx.strokeStyle = 'rgba(232, 64, 87, 0.7)';
       ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  _drawTripleTargets() {
+    if (!this.running) return;
+    for (const t of this.targets) {
+      if (!t) continue;
+      this._drawSingleTarget(t);
+    }
+  }
+
+  _drawTrackingTarget() {
+    if (!this.target || !this.running) return;
+    const t = this.target;
+    const ctx = this.ctx;
+    const r = t.size / 2;
+
+    // Draw the face target
+    this._drawSingleTarget(t);
+
+    // HP bar
+    if (t.hp != null && t.maxHp) {
+      const barW = t.size * 1.2;
+      const barH = 6;
+      const barX = t.x - barW / 2;
+      const barY = t.y - r - 16;
+      const hpRatio = t.hp / t.maxHp;
+
+      ctx.save();
+      // BG
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(barX, barY, barW, barH);
+      // HP fill
+      const hpColor = hpRatio > 0.5 ? '#49b26c' : hpRatio > 0.25 ? '#f0d48a' : '#e84057';
+      ctx.fillStyle = hpColor;
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+      // Border
+      ctx.strokeStyle = 'rgba(200,169,110,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
+      ctx.restore();
+    }
+
+    // Tracking indicator: glow when cursor is inside
+    if (this._trackingInside) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, r + 12, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(73, 178, 108, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(73, 178, 108, 0.5)';
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Shared single target draw (used by all modes)
+  _drawSingleTarget(t) {
+    if (!t) return;
+    const ctx = this.ctx;
+    const r = t.size / 2;
+
+    ctx.save();
+    ctx.globalAlpha = t.opacity;
+
+    const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.1;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, (r + 8) * pulse, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(180, 20, 30, 0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(200, 30, 30, 0.5)';
+    ctx.shadowBlur = 15;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, r + 3, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 50, 30, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (t.faceImg) {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(t.faceImg, t.x - r, t.y - r, t.size, t.size);
+    } else {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(232, 64, 87, 0.3)';
+      ctx.fill();
+      ctx.strokeStyle = '#e84057';
+      ctx.lineWidth = 3;
       ctx.stroke();
     }
 

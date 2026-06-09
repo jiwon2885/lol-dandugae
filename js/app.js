@@ -8,6 +8,7 @@
   // --- DOM refs ---
   const screens = {
     login: document.getElementById('screen-login'),
+    mode: document.getElementById('screen-mode'),
     lobby: document.getElementById('screen-lobby'),
     game: document.getElementById('screen-game'),
     result: document.getElementById('screen-result'),
@@ -60,6 +61,7 @@
   let gameEngine = null;
   let bgImage = null;
   let activeCountdownInterval = null;
+  let currentMode = 'grid'; // 'grid' | 'triple' | 'tracking'
 
   // Load background image
   const bgImg = new Image();
@@ -142,7 +144,7 @@
       Storage.createProfile(nick, null);
     }
     currentProfile = Storage.getProfile(nick);
-    enterLobby();
+    enterModeSelect();
   }
 
   // Listen for auth state changes (catches OAuth redirect)
@@ -170,10 +172,32 @@
     el.btnGoogleLogin.style.display = '';
   })();
 
+  // ========== MODE SELECT ==========
+  function enterModeSelect() {
+    showScreen('mode');
+  }
+
+  document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+      currentMode = card.dataset.mode;
+      selectedFaces.clear();
+      domBuilt = false;
+      enterLobby();
+    });
+  });
+
   // ========== LOBBY ==========
+  const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity };
+  const MODE_LABELS = { grid: '그리드', triple: '트리플 그리드', tracking: '트래킹' };
+
   function enterLobby() {
     showScreen('lobby');
     el.lobbyNickname.textContent = currentNickname;
+
+    // Show mode badge
+    const modeBadge = document.getElementById('lobby-mode-badge');
+    if (modeBadge) modeBadge.textContent = MODE_LABELS[currentMode] || '';
+
     renderFacePreviews();
   }
 
@@ -226,6 +250,16 @@
       selectedFaces.delete(idx);
       renderFacePreviews(-1);
     } else {
+      const maxFaces = MODE_MAX_FACES[currentMode] || Infinity;
+      if (selectedFaces.size >= maxFaces) {
+        // Replace: deselect the first selected, then select new
+        if (maxFaces === 1) {
+          selectedFaces.clear();
+        } else {
+          const first = selectedFaces.values().next().value;
+          selectedFaces.delete(first);
+        }
+      }
       selectedFaces.add(idx);
       renderFacePreviews(idx);
     }
@@ -233,10 +267,13 @@
 
   function updateFaceCount() {
     const count = selectedFaces.size;
-    document.getElementById('face-count-desc').textContent = count + '명 선택됨';
+    const maxFaces = MODE_MAX_FACES[currentMode] || Infinity;
+    const maxLabel = maxFaces === Infinity ? '' : ' / 최대 ' + maxFaces + '명';
+    document.getElementById('face-count-desc').textContent = count + '명 선택됨' + maxLabel;
     const warn = document.getElementById('face-warn');
     if (count < 1) {
       warn.style.display = 'block';
+      warn.textContent = '처형 대상을 1명 이상 선택해주세요!';
       el.btnStart.disabled = true;
     } else {
       warn.style.display = 'none';
@@ -247,6 +284,9 @@
   function getSelectedFaceImages() {
     return faceImages.filter((_, idx) => selectedFaces.has(idx));
   }
+
+  // Mode change button
+  document.getElementById('btn-change-mode').addEventListener('click', () => enterModeSelect());
 
   // Face selection buttons
   document.getElementById('btn-select-all').addEventListener('click', () => {
@@ -326,6 +366,10 @@
 
   // ========== GAME ==========
   function startGame() {
+    // Toggle HUD items based on mode
+    const isTracking = currentMode === 'tracking';
+    document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
+
     // Force fullscreen to prevent window shrinking exploit
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -389,6 +433,7 @@
       gameEngine = null;
     }
     gameEngine = new GameEngine(el.canvas, {
+      mode: currentMode,
       faceImages: getSelectedFaceImages(),
       duration: 30,
       targetSize: 100,
@@ -398,16 +443,23 @@
     });
     gameEngine.start();
     pauseCount = 0;
-    updateHUD({ timeLeft: 30, kills: 0, combo: 0, avgReaction: 0 });
+    updateHUD({ timeLeft: 30, kills: 0, combo: 0, avgReaction: 0, trackTime: 0, trackAccuracy: 0 });
   }
 
   function updateHUD(stats) {
     el.hudTime.textContent = typeof stats.timeLeft === 'number' ? stats.timeLeft.toFixed(1) : stats.timeLeft;
+
     el.hudKills.textContent = stats.kills;
     el.hudCombo.textContent = stats.combo;
     el.hudReaction.textContent = stats.avgReaction ? stats.avgReaction + 'ms' : '-';
 
-    // Time warning
+    if (currentMode === 'tracking') {
+      const trackEl = document.getElementById('hud-track-time');
+      const accEl = document.getElementById('hud-track-acc');
+      if (trackEl) trackEl.textContent = ((stats.trackTime || 0) / 1000).toFixed(1) + 's';
+      if (accEl) accEl.textContent = (stats.trackAccuracy || 0) + '%';
+    }
+
     if (stats.timeLeft <= 5) {
       el.hudTime.style.color = '#e84057';
     } else {
@@ -503,7 +555,7 @@
   }
 
   el.btnRetry.addEventListener('click', () => startGame());
-  el.btnToLobby.addEventListener('click', () => enterLobby());
+  el.btnToLobby.addEventListener('click', () => enterModeSelect());
 
   // ========== RANKING ==========
   const podiumEl = document.getElementById('podium');
@@ -683,7 +735,13 @@
         gamePaused = false;
         if (gameEngine) {
           // Respawn target at new position to prevent pre-aiming
-          gameEngine._spawnTarget();
+          if (gameEngine.mode === 'triple') {
+            for (let i = 0; i < 3; i++) gameEngine._spawnTripleTarget(i);
+          } else if (gameEngine.mode === 'tracking') {
+            gameEngine._spawnTrackingTarget();
+          } else {
+            gameEngine._spawnTarget();
+          }
           gameEngine.resume();
         }
       }
