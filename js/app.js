@@ -1,5 +1,10 @@
 /* ===== App Controller ===== */
 (() => {
+  // --- Supabase Auth ---
+  const SUPABASE_URL = 'https://kksnddwgfnxaztboegax.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_QS_S7PVEV2rzbpx2EDGQRA_fI3lqtpz';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   // --- DOM refs ---
   const screens = {
     login: document.getElementById('screen-login'),
@@ -51,6 +56,7 @@
     rankingBody: document.getElementById('ranking-body'),
     rankingEmpty: document.getElementById('ranking-empty'),
     btnRankingBack: document.getElementById('btn-ranking-back'),
+    btnGoogleLogin: document.getElementById('btn-google-login'),
   };
 
   // --- State ---
@@ -58,6 +64,7 @@
   let currentProfile = null;
   let gameEngine = null;
   let bgImage = null;
+  let activeCountdownInterval = null;
 
   // Load background image
   const bgImg = new Image();
@@ -159,6 +166,41 @@
     if (e.key === 'Enter') el.btnLogin.click();
   });
 
+  // ========== GOOGLE LOGIN ==========
+  el.btnGoogleLogin.addEventListener('click', async () => {
+    el.loginError.textContent = '';
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname },
+    });
+    if (error) {
+      el.loginError.textContent = 'Google 로그인 실패: ' + error.message;
+    }
+  });
+
+  // Check for existing Supabase session on load (OAuth redirect back)
+  (async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+      const meta = session.user.user_metadata || {};
+      const baseName = meta.full_name || meta.name || session.user.email.split('@')[0];
+      // Use Google user ID suffix to avoid collision with PIN-based profiles
+      let nick = baseName;
+      const existing = Storage.getProfile(nick);
+      if (existing && existing.pinHash !== null && existing.googleUid !== session.user.id) {
+        // Name collision with a PIN user — append discriminator
+        nick = baseName + '#' + session.user.id.slice(0, 4);
+      }
+      currentNickname = nick;
+      if (!Storage.getProfile(nick)) {
+        Storage.createProfile(nick, null);
+        Storage.updateProfile(nick, { googleUid: session.user.id });
+      }
+      currentProfile = Storage.getProfile(nick);
+      enterLobby();
+    }
+  })();
+
   // ========== LOBBY ==========
   function enterLobby() {
     showScreen('lobby');
@@ -223,7 +265,8 @@
     el.countdownNum.textContent = count;
     AudioManager.playCountdownBeep(false);
 
-    const countInterval = setInterval(() => {
+    if (activeCountdownInterval) clearInterval(activeCountdownInterval);
+    activeCountdownInterval = setInterval(() => {
       count--;
       if (count > 0) {
         el.countdownNum.textContent = count;
@@ -238,7 +281,8 @@
         el.countdownNum.style.animation = 'countPulse 0.6s ease-out';
         AudioManager.playCountdownBeep(true);
       } else {
-        clearInterval(countInterval);
+        clearInterval(activeCountdownInterval);
+        activeCountdownInterval = null;
         el.countdownOverlay.classList.remove('active');
         launchEngine();
       }
@@ -381,12 +425,12 @@
       <tr class="${r.nickname === currentNickname ? 'rank-me' : ''}">
         <td>${i + 1}</td>
         <td>${escapeHtml(r.nickname)}</td>
-        <td class="score-cell">${r.score || 0}</td>
-        <td>${r.kills}</td>
-        <td>${r.accuracy}%</td>
-        <td>${r.maxCombo || 0}</td>
-        <td>${r.reactionMs}ms</td>
-        <td>${r.grade}</td>
+        <td class="score-cell">${escapeHtml(String(r.score || 0))}</td>
+        <td>${escapeHtml(String(r.kills))}</td>
+        <td>${escapeHtml(String(r.accuracy))}%</td>
+        <td>${escapeHtml(String(r.maxCombo || 0))}</td>
+        <td>${escapeHtml(String(r.reactionMs))}ms</td>
+        <td>${escapeHtml(String(r.grade))}</td>
       </tr>
     `).join('');
   }
@@ -408,6 +452,20 @@
     }
   });
 
+  // Auto-pause when tab loses visibility (Alt+Tab, minimize, etc.)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    // Stop any active countdown
+    if (activeCountdownInterval) {
+      clearInterval(activeCountdownInterval);
+      activeCountdownInterval = null;
+      el.countdownOverlay.classList.remove('active');
+    }
+    if (gameEngine && gameEngine.running) {
+      pauseGame('탭이 비활성화되었습니다');
+    }
+  });
+
   el.btnPause.addEventListener('click', () => {
     if (gameEngine && gameEngine.running) {
       pauseGame('');
@@ -425,6 +483,8 @@
   el.btnPauseLobby.addEventListener('click', () => {
     if (!gamePaused) return;
     gamePaused = false;
+    if (activeCountdownInterval) { clearInterval(activeCountdownInterval); activeCountdownInterval = null; }
+    el.countdownOverlay.classList.remove('active');
     if (gameEngine) {
       gameEngine.destroy();
       gameEngine = null;
@@ -459,7 +519,8 @@
     el.countdownNum.textContent = count;
     AudioManager.playCountdownBeep(false);
 
-    const countInterval = setInterval(() => {
+    if (activeCountdownInterval) clearInterval(activeCountdownInterval);
+    activeCountdownInterval = setInterval(() => {
       count--;
       if (count > 0) {
         el.countdownNum.textContent = count;
@@ -474,7 +535,8 @@
         el.countdownNum.style.animation = 'countPulse 0.6s ease-out';
         AudioManager.playCountdownBeep(true);
       } else {
-        clearInterval(countInterval);
+        clearInterval(activeCountdownInterval);
+        activeCountdownInterval = null;
         el.countdownOverlay.classList.remove('active');
         gamePaused = false;
         if (gameEngine) gameEngine.resume();

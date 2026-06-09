@@ -37,17 +37,34 @@ export default async function handler(req, res) {
       if (!entry.nickname || entry.score == null) {
         return res.status(400).json({ error: 'Invalid data' });
       }
+
+      // Server-side validation: sanitize and clamp values
+      const nickname = String(entry.nickname).slice(0, 16);
+      const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), 300));
+      const durationSec = Number(entry.durationSec) || 30;
+      const accuracy = Math.max(0, Math.min(Math.floor(Number(entry.accuracy) || 0), 100));
+      const maxCombo = Math.max(0, Math.min(Math.floor(Number(entry.maxCombo) || 0), kills));
+      const reactionMs = Math.max(0, Math.min(Math.floor(Number(entry.reactionMs) || 0), 9999));
+      const bonusPoints = Math.max(0, Math.min(Math.floor(Number(entry.bonusPoints) || 0), kills * 3));
+      const kpm = Math.max(0, Math.min(Math.floor(Number(entry.kpm) || 0), 600));
+      const allowedGrades = ['C', 'B', 'A', 'S', 'S+'];
+      const grade = allowedGrades.includes(entry.grade) ? entry.grade : 'C';
+
+      // Recalculate score server-side (don't trust client score)
+      const raw = kills * 8 + accuracy * 0.3 + maxCombo * 2 + bonusPoints * 2;
+      const score = Math.round(raw / 5);
+
       const scores = (await redis.get(SCORES_KEY)) || [];
       scores.push({
-        nickname: entry.nickname,
-        kills: entry.kills,
-        durationSec: entry.durationSec,
-        reactionMs: entry.reactionMs,
-        accuracy: entry.accuracy,
-        maxCombo: entry.maxCombo,
-        grade: entry.grade,
-        kpm: entry.kpm,
-        score: entry.score,
+        nickname,
+        kills,
+        durationSec,
+        reactionMs,
+        accuracy,
+        maxCombo,
+        grade,
+        kpm,
+        score,
         id: Date.now(),
         createdAt: Date.now(),
       });

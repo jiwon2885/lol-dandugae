@@ -22,7 +22,7 @@ class GameEngine {
     this.animations = [];
     this.rafId = null;
     this.lastTime = 0;
-    this.timerInterval = null;
+    this._elapsedMs = 0; // precise elapsed time tracking
 
     // Fix canvas to screen resolution — CSS size matches pixel size 1:1
     // No CSS scaling = zoom/resize cannot shrink the game area
@@ -69,26 +69,18 @@ class GameEngine {
     this.bonusPoints = 0;
     this.reactionTimes = [];
     this.timeLeft = this.duration;
+    this._elapsedMs = 0;
+    this._lastTickSec = 0;
     this.animations = [];
     this._spawnTarget();
     this.lastTime = performance.now();
     this._loop(this.lastTime);
-
-    this.timerInterval = setInterval(() => {
-      this.timeLeft--;
-      if (this.timeLeft <= 0) {
-        this.timeLeft = 0;
-        this.stop();
-      }
-      this.onTick(this._getStats());
-    }, 1000);
   }
 
   pause() {
     if (!this.running || this.paused) return;
     this.paused = true;
     this.running = false;
-    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
   }
 
@@ -100,14 +92,6 @@ class GameEngine {
     // Reset spawn time so reaction isn't penalized for pause
     this.targetSpawnTime = performance.now();
     this._loop(this.lastTime);
-    this.timerInterval = setInterval(() => {
-      this.timeLeft--;
-      if (this.timeLeft <= 0) {
-        this.timeLeft = 0;
-        this.stop();
-      }
-      this.onTick(this._getStats());
-    }, 1000);
   }
 
   stop() {
@@ -115,7 +99,6 @@ class GameEngine {
     this.running = false;
     this.paused = false;
     this.target = null;
-    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     this.animations = [];
     this.onEnd(this._getStats());
@@ -124,7 +107,6 @@ class GameEngine {
   destroy() {
     this.running = false;
     this.paused = false;
-    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     if (this._boundClick) {
       this.canvas.removeEventListener('mousedown', this._boundClick);
@@ -256,8 +238,26 @@ class GameEngine {
     if (!this.running && this.animations.length === 0) return;
     this.rafId = requestAnimationFrame((t) => this._loop(t));
 
-    const dt = now - this.lastTime;
+    const rawDt = now - this.lastTime;
     this.lastTime = now;
+    // Clamp dt to prevent huge jumps (e.g., tab regaining focus)
+    const dt = Math.min(rawDt, 500);
+
+    // Precise timer: accumulate elapsed ms and derive timeLeft
+    if (this.running) {
+      this._elapsedMs += dt;
+      const newTimeLeft = Math.max(0, Math.ceil(this.duration - this._elapsedMs / 1000));
+      if (newTimeLeft !== this._lastTickSec) {
+        this._lastTickSec = newTimeLeft;
+        this.timeLeft = newTimeLeft;
+        this.onTick(this._getStats());
+      }
+      if (this._elapsedMs >= this.duration * 1000) {
+        this.timeLeft = 0;
+        this.stop();
+        return;
+      }
+    }
 
     this.ctx.clearRect(0, 0, this.W, this.H);
     this._drawBg();
