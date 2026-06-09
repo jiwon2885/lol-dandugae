@@ -95,7 +95,6 @@
     img.onload = () => {
       facesLoaded++;
       faceImages[idx] = img;
-      selectedFaces.add(idx); // default: all selected
       renderFacePreviews();
     };
     img.src = src;
@@ -178,24 +177,52 @@
     renderFacePreviews();
   }
 
-  function renderFacePreviews() {
-    el.facePreview.innerHTML = '';
-    faceImages.forEach((faceImg, idx) => {
-      if (!faceImg) return;
-      const wrap = document.createElement('div');
-      wrap.className = 'face-thumb-wrap' + (selectedFaces.has(idx) ? ' selected' : '');
-      wrap.addEventListener('click', () => {
-        if (selectedFaces.has(idx)) selectedFaces.delete(idx);
-        else selectedFaces.add(idx);
-        renderFacePreviews();
+  let faceWraps = []; // persistent DOM references
+
+  function renderFacePreviews(animateIdx) {
+    // First call: build DOM
+    if (faceWraps.length === 0) {
+      el.facePreview.innerHTML = '';
+      faceImages.forEach((faceImg, idx) => {
+        if (!faceImg) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'face-thumb-wrap';
+        wrap.dataset.idx = idx;
+        wrap.addEventListener('click', () => toggleFace(idx));
+        const img = document.createElement('img');
+        img.className = 'face-thumb';
+        img.src = faceImg.src;
+        wrap.appendChild(img);
+        el.facePreview.appendChild(wrap);
+        faceWraps[idx] = wrap;
       });
-      const img = document.createElement('img');
-      img.className = 'face-thumb';
-      img.src = faceImg.src;
-      wrap.appendChild(img);
-      el.facePreview.appendChild(wrap);
+    }
+    // Update classes without rebuilding DOM
+    faceImages.forEach((faceImg, idx) => {
+      if (!faceImg || !faceWraps[idx]) return;
+      const wrap = faceWraps[idx];
+      if (selectedFaces.has(idx)) {
+        wrap.classList.add('selected');
+        if (idx === animateIdx) {
+          wrap.classList.remove('face-pop');
+          void wrap.offsetWidth; // force reflow
+          wrap.classList.add('face-pop');
+        }
+      } else {
+        wrap.classList.remove('selected', 'face-pop');
+      }
     });
     updateFaceCount();
+  }
+
+  function toggleFace(idx) {
+    if (selectedFaces.has(idx)) {
+      selectedFaces.delete(idx);
+      renderFacePreviews(-1);
+    } else {
+      selectedFaces.add(idx);
+      renderFacePreviews(idx);
+    }
   }
 
   function updateFaceCount() {
@@ -218,11 +245,11 @@
   // Face selection buttons
   document.getElementById('btn-select-all').addEventListener('click', () => {
     faceImages.forEach((img, idx) => { if (img) selectedFaces.add(idx); });
-    renderFacePreviews();
+    renderFacePreviews(-1);
   });
   document.getElementById('btn-deselect-all').addEventListener('click', () => {
     selectedFaces.clear();
-    renderFacePreviews();
+    renderFacePreviews(-1);
   });
 
   // Start game

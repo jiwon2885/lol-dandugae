@@ -438,11 +438,15 @@ body {
   filter: grayscale(0) brightness(1.1) saturate(1.1);
   border-color: var(--gold-bright);
   box-shadow: 0 0 16px var(--gold-glow), 0 0 32px rgba(200,169,110,0.12);
-  animation: faceSelect 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .face-thumb-wrap.selected:hover .face-thumb {
   filter: grayscale(0) brightness(1.15) saturate(1.15);
   transform: scale(1.08);
+}
+
+/* Animation only on the just-clicked face */
+.face-thumb-wrap.face-pop .face-thumb {
+  animation: faceSelect 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes faceSelect {
