@@ -234,10 +234,12 @@ window.onerror = function(msg, src, line, col, err) {
     const modeName = document.getElementById('lobby-mode-name');
     if (modeName) modeName.textContent = MODE_LABELS[currentMode] || '';
 
-    // Update game time display
+    // Update game time & target size display
     const dur = MODE_DURATION[currentMode] || 30;
-    const timeValEl = document.querySelector('.lobby-info-value');
-    if (timeValEl) timeValEl.textContent = dur + '초';
+    const tSize = currentMode === 'tracking' ? 100 : 120;
+    const infoVals = document.querySelectorAll('.lobby-info-value');
+    if (infoVals[0]) infoVals[0].textContent = dur + '초';
+    if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
 
     renderFacePreviews();
   }
@@ -513,7 +515,7 @@ window.onerror = function(msg, src, line, col, err) {
       mode: currentMode,
       faceImages: getSelectedFaceImages(),
       duration: gameDuration,
-      targetSize: 100,
+      targetSize: currentMode === 'tracking' ? 100 : 120,
       bgImage,
       onTick: (stats) => updateHUD(stats),
       onEnd: (stats) => showResult(stats),
