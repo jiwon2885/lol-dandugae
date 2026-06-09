@@ -449,9 +449,12 @@
   el.btnToLobby.addEventListener('click', () => enterLobby());
 
   // ========== RANKING ==========
+  const podiumEl = document.getElementById('podium');
+
   async function showRanking() {
     showScreen('ranking');
     el.rankingBody.innerHTML = '';
+    podiumEl.innerHTML = '';
     el.rankingEmpty.style.display = 'none';
     el.rankingEmpty.textContent = '로딩 중...';
     el.rankingEmpty.style.display = 'block';
@@ -460,15 +463,42 @@
 
     if (rankings.length === 0) {
       el.rankingBody.innerHTML = '';
+      podiumEl.innerHTML = '';
       el.rankingEmpty.textContent = '아직 기록이 없습니다.';
       el.rankingEmpty.style.display = 'block';
       return;
     }
 
     el.rankingEmpty.style.display = 'none';
-    el.rankingBody.innerHTML = rankings.map((r, i) => `
+
+    // Top 3 podium
+    const top3 = rankings.slice(0, 3);
+    const medals = ['🥇', '🥈', '🥉'];
+    const podiumOrder = [1, 0, 2]; // 2nd, 1st, 3rd visual order
+    podiumEl.innerHTML = podiumOrder.map(i => {
+      const r = top3[i];
+      if (!r) return '';
+      const isMe = r.nickname === currentNickname;
+      return `
+        <div class="podium-card podium-${i + 1}${isMe ? ' podium-me' : ''}">
+          <div class="podium-medal">${medals[i]}</div>
+          <div class="podium-rank">${i + 1}</div>
+          <div class="podium-name">${escapeHtml(r.nickname)}</div>
+          <div class="podium-score">${escapeHtml(String(r.score || 0))}pt</div>
+          <div class="podium-details">
+            <span>${escapeHtml(String(r.kills))}격파</span>
+            <span>${escapeHtml(String(r.accuracy))}%</span>
+            <span>${escapeHtml(String(r.grade))}</span>
+          </div>
+          <div class="podium-pillar podium-pillar-${i + 1}"></div>
+        </div>`;
+    }).join('');
+
+    // Rest of rankings (4th+)
+    const rest = rankings.slice(3);
+    el.rankingBody.innerHTML = rest.map((r, i) => `
       <tr class="${r.nickname === currentNickname ? 'rank-me' : ''}">
-        <td>${i + 1}</td>
+        <td>${i + 4}</td>
         <td>${escapeHtml(r.nickname)}</td>
         <td class="score-cell">${escapeHtml(String(r.score || 0))}</td>
         <td>${escapeHtml(String(r.kills))}</td>

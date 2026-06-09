@@ -134,22 +134,25 @@
   <!-- ===== 랭킹 화면 ===== -->
   <div id="screen-ranking" class="screen">
     <div class="ranking-container">
-      <h2>랭킹</h2>
-      <table id="ranking-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>닉네임</th>
-            <th>점수</th>
-            <th>격파</th>
-            <th>정확도</th>
-            <th>콤보</th>
-            <th>반응속도</th>
-            <th>등급</th>
-          </tr>
-        </thead>
-        <tbody id="ranking-body"></tbody>
-      </table>
+      <h2 class="ranking-title">RANKING</h2>
+      <div id="podium" class="podium"></div>
+      <div class="ranking-table-wrap">
+        <table id="ranking-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>닉네임</th>
+              <th>점수</th>
+              <th>격파</th>
+              <th>정확도</th>
+              <th>콤보</th>
+              <th>반응속도</th>
+              <th>등급</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-body"></tbody>
+        </table>
+      </div>
       <p id="ranking-empty" style="display:none;">아직 기록이 없습니다.</p>
       <button id="btn-ranking-back" class="btn-secondary">돌아가기</button>
     </div>
