@@ -4,10 +4,31 @@ const AudioManager = (() => {
   let bgm = null;
   let retroTimer = null;
   let retroNodes = [];
+  let bgmVolume = 0.5;   // 0~1
+  let sfxVolume = 0.5;    // 0~1
+  let bgmGainNode = null;
+  let sfxGainNode = null;
 
   function init() {
     if (audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    bgmGainNode = audioCtx.createGain();
+    bgmGainNode.gain.value = bgmVolume;
+    bgmGainNode.connect(audioCtx.destination);
+    sfxGainNode = audioCtx.createGain();
+    sfxGainNode.gain.value = sfxVolume;
+    sfxGainNode.connect(audioCtx.destination);
+  }
+
+  function setBgmVolume(v) {
+    bgmVolume = v;
+    if (bgm) bgm.volume = v * 0.25; // bgm.mp3 base is loud
+    if (bgmGainNode) bgmGainNode.gain.value = v;
+  }
+
+  function setSfxVolume(v) {
+    sfxVolume = v;
+    if (sfxGainNode) sfxGainNode.gain.value = v;
   }
 
   // --- BGM (screen recording audio) ---
@@ -17,7 +38,7 @@ const AudioManager = (() => {
 
     bgm = new Audio('assets/bgm.mp3');
     bgm.loop = true;
-    bgm.volume = 0.12;
+    bgm.volume = bgmVolume * 0.25;
     bgm.play().catch(() => {});
 
     startRetroMusic();
@@ -87,7 +108,7 @@ const AudioManager = (() => {
     gain.gain.setValueAtTime(vol, audioCtx.currentTime + duration * 0.7);
     gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration * 0.95);
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(bgmGainNode || audioCtx.destination);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + duration);
   }
@@ -127,7 +148,7 @@ const AudioManager = (() => {
     gain1.gain.setValueAtTime(0.6, audioCtx.currentTime);
     gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
     osc1.connect(gain1);
-    gain1.connect(audioCtx.destination);
+    gain1.connect(sfxGainNode || audioCtx.destination);
     osc1.start(audioCtx.currentTime);
     osc1.stop(audioCtx.currentTime + 0.2);
 
@@ -152,7 +173,7 @@ const AudioManager = (() => {
 
     noise.connect(bandpass);
     bandpass.connect(noiseGain);
-    noiseGain.connect(audioCtx.destination);
+    noiseGain.connect(sfxGainNode || audioCtx.destination);
     noise.start(audioCtx.currentTime);
 
     // Layer 3: Blade whoosh (descending tone)
@@ -164,7 +185,7 @@ const AudioManager = (() => {
     gain2.gain.setValueAtTime(0.12, audioCtx.currentTime);
     gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
     osc2.connect(gain2);
-    gain2.connect(audioCtx.destination);
+    gain2.connect(sfxGainNode || audioCtx.destination);
     osc2.start(audioCtx.currentTime);
     osc2.stop(audioCtx.currentTime + 0.08);
 
@@ -177,7 +198,7 @@ const AudioManager = (() => {
     gain3.gain.setValueAtTime(0.4, audioCtx.currentTime);
     gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
     osc3.connect(gain3);
-    gain3.connect(audioCtx.destination);
+    gain3.connect(sfxGainNode || audioCtx.destination);
     osc3.start(audioCtx.currentTime);
     osc3.stop(audioCtx.currentTime + 0.3);
   }
@@ -194,7 +215,7 @@ const AudioManager = (() => {
     gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(sfxGainNode || audioCtx.destination);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.12);
   }
@@ -210,10 +231,10 @@ const AudioManager = (() => {
     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(sfxGainNode || audioCtx.destination);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.15);
   }
 
-  return { init, startBGM, stopBGM, playHitSound, playMissSound, playCountdownBeep };
+  return { init, startBGM, stopBGM, playHitSound, playMissSound, playCountdownBeep, setBgmVolume, setSfxVolume };
 })();

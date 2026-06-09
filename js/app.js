@@ -258,6 +258,62 @@
     renderFacePreviews(-1);
   });
 
+  // ========== SETTINGS ==========
+  const volBgm = document.getElementById('vol-bgm');
+  const volBgmVal = document.getElementById('vol-bgm-val');
+  const volSfx = document.getElementById('vol-sfx');
+  const volSfxVal = document.getElementById('vol-sfx-val');
+
+  // Load saved settings
+  const saved = JSON.parse(localStorage.getItem('loldandugae_settings') || '{}');
+  if (saved.bgm != null) { volBgm.value = saved.bgm; volBgmVal.textContent = saved.bgm; AudioManager.setBgmVolume(saved.bgm / 100); }
+  if (saved.sfx != null) { volSfx.value = saved.sfx; volSfxVal.textContent = saved.sfx; AudioManager.setSfxVolume(saved.sfx / 100); }
+  if (saved.cursor) applyCursor(saved.cursor);
+
+  function saveSettings() {
+    localStorage.setItem('loldandugae_settings', JSON.stringify({
+      bgm: Number(volBgm.value),
+      sfx: Number(volSfx.value),
+      cursor: currentCursor,
+    }));
+  }
+
+  volBgm.addEventListener('input', () => {
+    volBgmVal.textContent = volBgm.value;
+    AudioManager.setBgmVolume(Number(volBgm.value) / 100);
+    saveSettings();
+  });
+  volSfx.addEventListener('input', () => {
+    volSfxVal.textContent = volSfx.value;
+    AudioManager.setSfxVolume(Number(volSfx.value) / 100);
+    saveSettings();
+  });
+
+  // Cursor style
+  let currentCursor = saved.cursor || 'crosshair';
+  const cursorBtns = document.querySelectorAll('.btn-cursor');
+
+  const CURSOR_MAP = {
+    crosshair: 'crosshair',
+    dot: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='4' fill='%23e84057'/%3E%3C/svg%3E\") 12 12, crosshair",
+    circle: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%23e84057' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23e84057'/%3E%3C/svg%3E\") 16 16, crosshair",
+    default: 'default',
+  };
+
+  function applyCursor(type) {
+    currentCursor = type;
+    cursorBtns.forEach(b => b.classList.toggle('active', b.dataset.cursor === type));
+    document.getElementById('screen-game').style.cursor = CURSOR_MAP[type] || 'crosshair';
+  }
+  applyCursor(currentCursor);
+
+  cursorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyCursor(btn.dataset.cursor);
+      saveSettings();
+    });
+  });
+
   // Start game
   el.btnStart.addEventListener('click', () => {
     if (selectedFaces.size < 1) return;
