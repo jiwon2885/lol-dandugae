@@ -50,14 +50,12 @@ const Storage = (() => {
   }
 
   // --- Score calculation ---
-  // kills×10 + accuracy bonus (max 50) + combo bonus + speed bonus (max 50)
+  // kills×10 + accuracy bonus (max 50) + combo bonus
   function calcScore(entry) {
     const killPts = (entry.kills || 0) * 10;
     const accPts = Math.round((entry.accuracy || 0) * 0.5);
     const comboPts = (entry.maxCombo || 0) * 2;
-    const reactionMs = entry.reactionMs || 999;
-    const speedPts = Math.max(0, Math.round((500 - reactionMs) * 0.1));
-    return killPts + accPts + comboPts + speedPts;
+    return killPts + accPts + comboPts;
   }
 
   // --- Scores (서버 API) ---

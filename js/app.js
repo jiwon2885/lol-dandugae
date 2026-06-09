@@ -337,10 +337,10 @@
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
     });
-    if (score >= 700) return 'S+';
-    if (score >= 550) return 'S';
-    if (score >= 400) return 'A';
-    if (score >= 250) return 'B';
+    if (score >= 650) return 'S+';
+    if (score >= 500) return 'S';
+    if (score >= 350) return 'A';
+    if (score >= 200) return 'B';
     return 'C';
   }
 
