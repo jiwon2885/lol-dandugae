@@ -613,6 +613,13 @@ window.onerror = function(msg, src, line, col, err) {
     el.resKpm.textContent = stats.kpm;
   }
 
+  // Mode-specific grade thresholds (balanced to similar difficulty)
+  const GRADE_THRESHOLDS = {
+    grid:     { 'S+': 700, S: 680, A: 500, B: 300 },
+    triple:   { 'S+': 900, S: 850, A: 650, B: 400 },
+    tracking: { 'S+': 600, S: 550, A: 400, B: 250 },
+  };
+
   function calcGrade(stats) {
     const score = Storage.calcScore({
       kills: stats.kills,
@@ -620,10 +627,11 @@ window.onerror = function(msg, src, line, col, err) {
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
     });
-    if (score >= 700) return 'S+';
-    if (score >= 680) return 'S';
-    if (score >= 500) return 'A';
-    if (score >= 300) return 'B';
+    const t = GRADE_THRESHOLDS[currentMode] || GRADE_THRESHOLDS.grid;
+    if (score >= t['S+']) return 'S+';
+    if (score >= t.S) return 'S';
+    if (score >= t.A) return 'A';
+    if (score >= t.B) return 'B';
     return 'C';
   }
 
