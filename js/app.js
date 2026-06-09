@@ -348,7 +348,6 @@
   const saved = JSON.parse(localStorage.getItem('loldandugae_settings') || '{}');
   if (saved.bgm != null) { volBgm.value = saved.bgm; volBgmVal.textContent = saved.bgm; AudioManager.setBgmVolume(saved.bgm / 100); }
   if (saved.sfx != null) { volSfx.value = saved.sfx; volSfxVal.textContent = saved.sfx; AudioManager.setSfxVolume(saved.sfx / 100); }
-  if (saved.cursor) applyCursor(saved.cursor);
 
   function saveSettings() {
     localStorage.setItem('loldandugae_settings', JSON.stringify({
