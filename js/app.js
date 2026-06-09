@@ -75,14 +75,27 @@
     'assets/IMG_8453.png',
     'assets/IMG_8454.png',
     'assets/IMG_8455.png',
+    'assets/face_01.png',
+    'assets/face_02.png',
+    'assets/face_03.png',
+    'assets/face_04.png',
+    'assets/face_05.png',
+    'assets/face_06.png',
+    'assets/face_07.png',
+    'assets/face_08.png',
+    'assets/face_09.png',
+    'assets/face_10.png',
+    'assets/face_11.png',
   ];
   const faceImages = [];
+  const selectedFaces = new Set(); // indices of selected faces
   let facesLoaded = 0;
-  FACE_FILES.forEach(src => {
+  FACE_FILES.forEach((src, idx) => {
     const img = new Image();
     img.onload = () => {
       facesLoaded++;
-      faceImages.push(img);
+      faceImages[idx] = img;
+      selectedFaces.add(idx); // default: all selected
       renderFacePreviews();
     };
     img.src = src;
@@ -167,19 +180,54 @@
 
   function renderFacePreviews() {
     el.facePreview.innerHTML = '';
-    faceImages.forEach((faceImg) => {
+    faceImages.forEach((faceImg, idx) => {
+      if (!faceImg) return;
       const wrap = document.createElement('div');
-      wrap.className = 'face-thumb-wrap';
+      wrap.className = 'face-thumb-wrap' + (selectedFaces.has(idx) ? ' selected' : '');
+      wrap.addEventListener('click', () => {
+        if (selectedFaces.has(idx)) selectedFaces.delete(idx);
+        else selectedFaces.add(idx);
+        renderFacePreviews();
+      });
       const img = document.createElement('img');
       img.className = 'face-thumb';
       img.src = faceImg.src;
       wrap.appendChild(img);
       el.facePreview.appendChild(wrap);
     });
+    updateFaceCount();
   }
+
+  function updateFaceCount() {
+    const count = selectedFaces.size;
+    document.getElementById('face-count-desc').textContent = count + '명 선택됨';
+    const warn = document.getElementById('face-warn');
+    if (count < 3) {
+      warn.style.display = 'block';
+      el.btnStart.disabled = true;
+    } else {
+      warn.style.display = 'none';
+      el.btnStart.disabled = false;
+    }
+  }
+
+  function getSelectedFaceImages() {
+    return faceImages.filter((_, idx) => selectedFaces.has(idx));
+  }
+
+  // Face selection buttons
+  document.getElementById('btn-select-all').addEventListener('click', () => {
+    faceImages.forEach((img, idx) => { if (img) selectedFaces.add(idx); });
+    renderFacePreviews();
+  });
+  document.getElementById('btn-deselect-all').addEventListener('click', () => {
+    selectedFaces.clear();
+    renderFacePreviews();
+  });
 
   // Start game
   el.btnStart.addEventListener('click', () => {
+    if (selectedFaces.size < 3) return;
     startGame();
   });
 
@@ -251,7 +299,7 @@
       gameEngine = null;
     }
     gameEngine = new GameEngine(el.canvas, {
-      faceImages,
+      faceImages: getSelectedFaceImages(),
       duration: 30,
       targetSize: 100,
       bgImage,
