@@ -404,8 +404,7 @@
   // ========== PAUSE / RESUME (fullscreen exit detection) ==========
   let gamePaused = false;
   let pauseCount = 0;
-  const MAX_PAUSES = 3;
-  const PAUSE_PENALTY_SEC = 2; // seconds deducted per pause
+  const MAX_PAUSES = 1;
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && gameEngine && gameEngine.running) {
@@ -439,25 +438,9 @@
     gamePaused = true;
     gameEngine.pause();
 
-    // Time penalty for pausing
-    if (gameEngine._elapsedMs !== undefined) {
-      gameEngine._elapsedMs += PAUSE_PENALTY_SEC * 1000;
-      gameEngine.timeLeft = Math.max(0, gameEngine.duration - gameEngine._elapsedMs / 1000);
-      if (gameEngine.timeLeft <= 0) {
-        gamePaused = false;
-        gameEngine.timeLeft = 0;
-        gameEngine.stop();
-        return;
-      }
-    }
+    el.pauseDesc.textContent = reason || '';
 
-    const pausesLeft = Math.max(0, MAX_PAUSES - pauseCount);
-    const penaltyMsg = pauseCount > 0 ? `\n일시정지 시 ${PAUSE_PENALTY_SEC}초 차감 (남은 횟수: ${pausesLeft})` : '';
-    el.pauseDesc.textContent = (reason || '') + penaltyMsg;
-
-    // If no pauses left, disable resume and force lobby exit
     if (pauseCount >= MAX_PAUSES) {
-      el.pauseDesc.textContent = (reason || '') + '\n일시정지 횟수를 모두 소진했습니다.\n로비로 나가주세요.';
       el.btnResume.style.display = 'none';
     } else {
       el.btnResume.style.display = '';
