@@ -25,6 +25,25 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
+      // List all active bans
+      if (req.query?.list === 'all') {
+        const keys = [];
+        let cursor = 0;
+        do {
+          const result = await redis.scan(cursor, { match: 'ban:*', count: 100 });
+          cursor = result[0];
+          keys.push(...result[1]);
+        } while (cursor !== 0 && cursor !== '0');
+        const bans = [];
+        for (const key of keys) {
+          const val = await redis.get(key);
+          if (val && Date.now() < Number(val)) {
+            bans.push({ key, userId: key.replace('ban:', ''), banUntil: Number(val) });
+          }
+        }
+        return res.json(bans);
+      }
+
       const banUntil = await redis.get(banKey);
       if (banUntil && Date.now() < Number(banUntil)) {
         return res.json({ banned: true, banUntil: Number(banUntil) });
