@@ -177,41 +177,47 @@
     renderFacePreviews();
   }
 
-  let faceWraps = []; // persistent DOM references
+  let faceWraps = {}; // persistent DOM references by index
+  let domBuilt = false;
+
+  function buildFaceDom() {
+    el.facePreview.innerHTML = '';
+    faceWraps = {};
+    FACE_FILES.forEach((src, idx) => {
+      if (!faceImages[idx]) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'face-thumb-wrap';
+      wrap.addEventListener('click', () => toggleFace(idx));
+      const img = document.createElement('img');
+      img.className = 'face-thumb';
+      img.src = faceImages[idx].src;
+      wrap.appendChild(img);
+      el.facePreview.appendChild(wrap);
+      faceWraps[idx] = wrap;
+    });
+    domBuilt = true;
+  }
 
   function renderFacePreviews(animateIdx) {
-    // First call: build DOM
-    if (faceWraps.length === 0) {
-      el.facePreview.innerHTML = '';
-      faceImages.forEach((faceImg, idx) => {
-        if (!faceImg) return;
-        const wrap = document.createElement('div');
-        wrap.className = 'face-thumb-wrap';
-        wrap.dataset.idx = idx;
-        wrap.addEventListener('click', () => toggleFace(idx));
-        const img = document.createElement('img');
-        img.className = 'face-thumb';
-        img.src = faceImg.src;
-        wrap.appendChild(img);
-        el.facePreview.appendChild(wrap);
-        faceWraps[idx] = wrap;
-      });
+    // Rebuild DOM if new images loaded since last build
+    const loadedCount = faceImages.filter(Boolean).length;
+    if (!domBuilt || Object.keys(faceWraps).length !== loadedCount) {
+      buildFaceDom();
     }
-    // Update classes without rebuilding DOM
-    faceImages.forEach((faceImg, idx) => {
-      if (!faceImg || !faceWraps[idx]) return;
+    // Update classes
+    for (const idx in faceWraps) {
       const wrap = faceWraps[idx];
-      if (selectedFaces.has(idx)) {
+      if (selectedFaces.has(Number(idx))) {
         wrap.classList.add('selected');
-        if (idx === animateIdx) {
+        if (Number(idx) === animateIdx) {
           wrap.classList.remove('face-pop');
-          void wrap.offsetWidth; // force reflow
+          void wrap.offsetWidth;
           wrap.classList.add('face-pop');
         }
       } else {
         wrap.classList.remove('selected', 'face-pop');
       }
-    });
+    }
     updateFaceCount();
   }
 
