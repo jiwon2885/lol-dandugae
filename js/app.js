@@ -108,35 +108,28 @@
     screens[name].classList.add('active');
   }
 
-  // ========== GOOGLE LOGIN ==========
-  el.btnGoogleLogin.addEventListener('click', async () => {
-    el.loginError.textContent = '';
-    el.btnGoogleLogin.disabled = true;
-    el.btnGoogleLogin.textContent = '로그인 중...';
+  // ========== AUTH STATE ==========
+  let currentUserId = null;
+  let authResolved = false; // true once we know if user is logged in or not
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + window.location.pathname },
-    });
+  const GOOGLE_BTN_HTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인';
 
-    if (error) {
-      el.loginError.textContent = 'Google 로그인 실패: ' + error.message;
-      el.btnGoogleLogin.disabled = false;
-      el.btnGoogleLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인';
-    }
-    // If no error, the page will redirect to Google
-  });
+  function showLoginButton() {
+    el.loginLoading.style.display = 'none';
+    el.btnGoogleLogin.style.display = '';
+    el.btnGoogleLogin.disabled = false;
+    el.btnGoogleLogin.innerHTML = GOOGLE_BTN_HTML;
+  }
 
-  // Handle auth — enter game when user is authenticated
-  let enteredGame = false;
-  function enterGame(user) {
-    if (!user || enteredGame) return;
-    enteredGame = true;
+  function onAuthSuccess(user) {
+    if (authResolved) return;
+    authResolved = true;
     currentUserId = user.id || user.email;
 
-    // Hide login UI
+    // Hide login UI completely
     el.loginLoading.style.display = 'none';
     el.btnGoogleLogin.style.display = 'none';
+    el.loginError.textContent = '';
 
     const meta = user.user_metadata || {};
     const nick = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Player');
@@ -146,28 +139,63 @@
       Storage.createProfile(nick, null);
     }
     currentProfile = Storage.getProfile(nick);
-
-    // Ban check — non-blocking, just redirect if banned
-    checkBanForUser(currentUserId).catch(() => {});
-
     enterModeSelect();
+
+    // Ban check — non-blocking, runs after entering mode select
+    checkBanForUser(currentUserId).catch(() => {});
   }
 
-  function showLoginButton() {
-    if (enteredGame) return;
-    el.loginLoading.style.display = 'none';
-    el.btnGoogleLogin.style.display = '';
-    el.btnGoogleLogin.disabled = false;
-    el.btnGoogleLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인';
-  }
+  // ========== AUTH INIT: try getSession first, fallback to onAuthStateChange ==========
+  // Step 1: Show loading
+  el.loginLoading.style.display = 'block';
+  el.btnGoogleLogin.style.display = 'none';
 
-  // Single auth listener — handles everything (initial load + OAuth redirect + token refresh)
+  // Step 2: Try getSession (works for existing sessions + OAuth redirects with hash)
+  supabase.auth.getSession()
+    .then(({ data }) => {
+      if (authResolved) return;
+      if (data && data.session && data.session.user) {
+        onAuthSuccess(data.session.user);
+      } else {
+        showLoginButton();
+      }
+    })
+    .catch((err) => {
+      console.error('[Auth] getSession failed:', err);
+      if (!authResolved) showLoginButton();
+    });
+
+  // Step 3: Also listen for auth changes (catches OAuth popup, token refresh, etc.)
   supabase.auth.onAuthStateChange((event, session) => {
-    console.log('[Auth]', event, !!session);
     if (session && session.user) {
-      enterGame(session.user);
-    } else if (event === 'INITIAL_SESSION') {
-      // No existing session — show login
+      onAuthSuccess(session.user);
+    }
+  });
+
+  // Step 4: Hard failsafe — if nothing resolves in 3 seconds, show login button
+  setTimeout(() => {
+    if (!authResolved) showLoginButton();
+  }, 3000);
+
+  // ========== GOOGLE LOGIN BUTTON ==========
+  el.btnGoogleLogin.addEventListener('click', async () => {
+    el.loginError.textContent = '';
+    el.btnGoogleLogin.disabled = true;
+    el.btnGoogleLogin.textContent = '로그인 중...';
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + window.location.pathname },
+      });
+
+      if (error) {
+        el.loginError.textContent = 'Google 로그인 실패: ' + error.message;
+        showLoginButton();
+      }
+      // If no error, the page will redirect to Google
+    } catch (err) {
+      el.loginError.textContent = '로그인 오류: ' + err.message;
       showLoginButton();
     }
   });
@@ -809,7 +837,6 @@
 
   // ========== DEVTOOLS BAN SYSTEM (server-side) ==========
   const BAN_API = '/api/ban';
-  let currentUserId = null; // set after login
 
   const banOverlay = document.getElementById('ban-overlay');
   const banMinutes = document.getElementById('ban-minutes');
@@ -857,8 +884,9 @@
         banOverlay.style.display = 'none';
         showScreen('login');
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session && session.user) { enteredGame = false; enterGame(session.user); }
-        });
+          if (session && session.user) { authResolved = false; onAuthSuccess(session.user); }
+          else showLoginButton();
+        }).catch(() => showLoginButton());
         return;
       }
       const mins = Math.floor(remaining / 60000);
