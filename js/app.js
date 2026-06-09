@@ -511,16 +511,76 @@
     if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
 
-  // ========== DEVTOOLS OPEN DETECTION ==========
+  // ========== DEVTOOLS BAN SYSTEM ==========
+  const BAN_KEY = 'guillotine_ban_until';
+  const BAN_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+  const banOverlay = document.getElementById('ban-overlay');
+  const banMinutes = document.getElementById('ban-minutes');
+  const banSeconds = document.getElementById('ban-seconds');
+  let banTimerInterval = null;
+
+  function activateBan() {
+    // Stop game if running
+    if (gameEngine && gameEngine.running) {
+      gameEngine.pause();
+      gamePaused = true;
+    }
+    if (activeCountdownInterval) {
+      clearInterval(activeCountdownInterval);
+      activeCountdownInterval = null;
+    }
+    AudioManager.stopBGM();
+
+    const banUntil = Date.now() + BAN_DURATION_MS;
+    localStorage.setItem(BAN_KEY, String(banUntil));
+    showBanScreen(banUntil);
+  }
+
+  function showBanScreen(banUntil) {
+    // Hide everything, show ban
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    banOverlay.style.display = 'flex';
+
+    if (banTimerInterval) clearInterval(banTimerInterval);
+    function updateBanTimer() {
+      const remaining = banUntil - Date.now();
+      if (remaining <= 0) {
+        // Ban expired
+        clearInterval(banTimerInterval);
+        banTimerInterval = null;
+        localStorage.removeItem(BAN_KEY);
+        banOverlay.style.display = 'none';
+        showScreen('login');
+        // Re-check session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session && session.user) handleUser(session.user);
+        });
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      banMinutes.textContent = String(mins).padStart(2, '0');
+      banSeconds.textContent = String(secs).padStart(2, '0');
+    }
+    updateBanTimer();
+    banTimerInterval = setInterval(updateBanTimer, 1000);
+  }
+
+  // Check ban on page load
+  (function checkBan() {
+    const banUntil = Number(localStorage.getItem(BAN_KEY));
+    if (banUntil && Date.now() < banUntil) {
+      showBanScreen(banUntil);
+    }
+  })();
+
   // Detect devtools via debugger timing
   setInterval(() => {
     const start = performance.now();
     debugger;
     if (performance.now() - start > 100) {
-      // DevTools is open — pause game if running
-      if (gameEngine && gameEngine.running) {
-        pauseGame('개발자 도구가 감지되었습니다');
-      }
+      activateBan();
     }
   }, 3000);
 

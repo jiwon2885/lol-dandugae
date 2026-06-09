@@ -53,6 +53,48 @@
   .screen { display: none !important; }
 }
 
+/* ===== Ban Overlay ===== */
+#ban-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ban-box {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--bg-card);
+  border: 1px solid rgba(232, 64, 87, 0.3);
+  border-radius: 16px;
+  max-width: 480px;
+}
+.ban-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+.ban-desc {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.ban-timer {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  color: var(--red);
+  text-shadow: 0 0 20px var(--red-glow);
+  margin-bottom: 16px;
+}
+.ban-sub {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
 body {
   font-family: var(--font-body);
   background: var(--bg-dark);
