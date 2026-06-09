@@ -257,7 +257,7 @@
   }
 
   function updateHUD(stats) {
-    el.hudTime.textContent = stats.timeLeft;
+    el.hudTime.textContent = typeof stats.timeLeft === 'number' ? stats.timeLeft.toFixed(1) : stats.timeLeft;
     el.hudKills.textContent = stats.kills;
     el.hudCombo.textContent = stats.combo;
     el.hudReaction.textContent = stats.avgReaction ? stats.avgReaction + 'ms' : '-';

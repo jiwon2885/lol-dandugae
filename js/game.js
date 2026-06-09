@@ -70,7 +70,6 @@ class GameEngine {
     this.reactionTimes = [];
     this.timeLeft = this.duration;
     this._elapsedMs = 0;
-    this._lastTickSec = 0;
     this.animations = [];
     this._spawnTarget();
     this.lastTime = performance.now();
@@ -243,15 +242,11 @@ class GameEngine {
     // Clamp dt to prevent huge jumps (e.g., tab regaining focus)
     const dt = Math.min(rawDt, 500);
 
-    // Precise timer: accumulate elapsed ms and derive timeLeft
+    // Precise timer: accumulate elapsed ms and derive timeLeft (decimal)
     if (this.running) {
       this._elapsedMs += dt;
-      const newTimeLeft = Math.max(0, Math.ceil(this.duration - this._elapsedMs / 1000));
-      if (newTimeLeft !== this._lastTickSec) {
-        this._lastTickSec = newTimeLeft;
-        this.timeLeft = newTimeLeft;
-        this.onTick(this._getStats());
-      }
+      this.timeLeft = Math.max(0, this.duration - this._elapsedMs / 1000);
+      this.onTick(this._getStats());
       if (this._elapsedMs >= this.duration * 1000) {
         this.timeLeft = 0;
         this.stop();
