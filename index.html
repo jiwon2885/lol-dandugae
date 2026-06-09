@@ -87,6 +87,7 @@
         </div>
         <div class="lobby-header-right">
           <span id="lobby-nickname" class="nick-badge"></span>
+          <button id="btn-settings" class="btn-settings" title="설정">⚙</button>
         </div>
       </div>
 
@@ -105,39 +106,14 @@
         <p id="face-warn" class="face-warn" style="display:none;">처형 대상을 1명 이상 선택해주세요!</p>
       </div>
 
-      <div class="lobby-card">
-        <h3>설정</h3>
-        <div class="setting-row">
-          <label>BGM 볼륨</label>
-          <div class="slider-ctrl">
-            <input type="range" id="vol-bgm" min="0" max="100" value="50">
-            <span id="vol-bgm-val" class="slider-val">50</span>
-          </div>
+      <div class="lobby-info-row">
+        <div class="lobby-info-item">
+          <span class="lobby-info-label">게임 시간</span>
+          <span class="lobby-info-value">30초</span>
         </div>
-        <div class="setting-row">
-          <label>효과음 볼륨</label>
-          <div class="slider-ctrl">
-            <input type="range" id="vol-sfx" min="0" max="100" value="50">
-            <span id="vol-sfx-val" class="slider-val">50</span>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>커서 모양</label>
-          <div class="cursor-options">
-            <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
-            <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
-            <button class="btn-cursor" data-cursor="dot" title="도트">●</button>
-            <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
-            <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>게임 시간</label>
-          <span class="fixed-val">30초</span>
-        </div>
-        <div class="setting-row">
-          <label>타겟 크기</label>
-          <span class="fixed-val">100px</span>
+        <div class="lobby-info-item">
+          <span class="lobby-info-label">타겟 크기</span>
+          <span class="lobby-info-value">100px</span>
         </div>
       </div>
 
@@ -241,6 +217,40 @@
         <span id="ban-minutes">30</span>:<span id="ban-seconds">00</span>
       </div>
       <p class="ban-sub">남은 시간 후 다시 이용할 수 있습니다.</p>
+    </div>
+  </div>
+
+  <!-- ===== 설정 모달 ===== -->
+  <div id="settings-overlay" class="settings-overlay">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <h3>설정</h3>
+        <button id="btn-settings-close" class="btn-settings-close">✕</button>
+      </div>
+      <div class="setting-row">
+        <label>BGM 볼륨</label>
+        <div class="slider-ctrl">
+          <input type="range" id="vol-bgm" min="0" max="100" value="50">
+          <span id="vol-bgm-val" class="slider-val">50</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>효과음 볼륨</label>
+        <div class="slider-ctrl">
+          <input type="range" id="vol-sfx" min="0" max="100" value="50">
+          <span id="vol-sfx-val" class="slider-val">50</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>커서 모양</label>
+        <div class="cursor-options">
+          <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
+          <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
+          <button class="btn-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
+          <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
+          <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
+        </div>
+      </div>
     </div>
   </div>
 

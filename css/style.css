@@ -665,13 +665,113 @@ body {
   color: var(--text-secondary);
 }
 
-.fixed-val {
+/* Lobby info row (game time, target size) */
+.lobby-info-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.lobby-info-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  backdrop-filter: blur(12px);
+}
+.lobby-info-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.lobby-info-value {
   font-size: 0.9rem;
   font-weight: 800;
   color: var(--gold);
   background: rgba(200,169,110,0.08);
   padding: 4px 12px;
   border-radius: 6px;
+}
+
+/* Settings button */
+.btn-settings {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(200,170,110,0.2);
+  border-radius: 10px;
+  background: rgba(200,169,110,0.06);
+  color: var(--gold);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  backdrop-filter: blur(8px);
+}
+.btn-settings:hover {
+  background: rgba(200,169,110,0.14);
+  border-color: rgba(200,170,110,0.4);
+  transform: rotate(45deg);
+}
+
+/* Settings modal overlay */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 11, 18, 0.75);
+  backdrop-filter: blur(6px);
+}
+.settings-overlay.active { display: flex; }
+
+.settings-modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 36px 28px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-heavy);
+  animation: fadeSlideUp 0.25s ease-out;
+  position: relative;
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.settings-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.btn-settings-close {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(200,170,110,0.15);
+  border-radius: 8px;
+  background: rgba(200,169,110,0.04);
+  color: var(--text-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.btn-settings-close:hover {
+  background: rgba(232,64,87,0.1);
+  border-color: rgba(232,64,87,0.3);
+  color: var(--red);
 }
 
 /* Slider controls */

@@ -298,6 +298,18 @@
     renderFacePreviews(-1);
   });
 
+  // ========== SETTINGS MODAL ==========
+  const settingsOverlay = document.getElementById('settings-overlay');
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    settingsOverlay.classList.add('active');
+  });
+  document.getElementById('btn-settings-close').addEventListener('click', () => {
+    settingsOverlay.classList.remove('active');
+  });
+  settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) settingsOverlay.classList.remove('active');
+  });
+
   // ========== SETTINGS ==========
   const volBgm = document.getElementById('vol-bgm');
   const volBgmVal = document.getElementById('vol-bgm-val');
@@ -336,7 +348,7 @@
   const CURSOR_MAP = {
     crosshair: 'crosshair',
     default: 'default',
-    dot: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='4' fill='%23e84057'/%3E%3C/svg%3E\") 12 12, crosshair",
+    dot: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='6' fill='%2349d9b2'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2349d9b2' opacity='0.4' stroke='%2349d9b2' stroke-width='2'/%3E%3C/svg%3E\") 16 16, crosshair",
     shield: "url('assets/cursor_shield.png') 4 4, crosshair",
     gauntlet: "url('assets/cursor_gauntlet.png') 16 16, crosshair",
   };
@@ -560,7 +572,7 @@
   }
 
   el.btnRetry.addEventListener('click', () => startGame());
-  el.btnToLobby.addEventListener('click', () => enterModeSelect());
+  el.btnToLobby.addEventListener('click', () => enterLobby());
 
   // ========== RANKING ==========
   const podiumEl = document.getElementById('podium');
