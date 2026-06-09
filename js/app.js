@@ -127,25 +127,16 @@
     // If no error, the page will redirect to Google
   });
 
-  // Handle auth state (initial session check + OAuth redirect callback)
-  let userHandled = false;
-  async function handleUser(user) {
-    if (!user || userHandled) return;
-    userHandled = true;
+  // Handle auth — enter game when user is authenticated
+  let enteredGame = false;
+  function enterGame(user) {
+    if (!user || enteredGame) return;
+    enteredGame = true;
     currentUserId = user.id || user.email;
 
-    // Hide login loading
+    // Hide login UI
     el.loginLoading.style.display = 'none';
     el.btnGoogleLogin.style.display = 'none';
-
-    // Check server-side ban before entering lobby (with timeout)
-    try {
-      const banned = await Promise.race([
-        checkBanForUser(currentUserId),
-        new Promise(resolve => setTimeout(() => resolve(false), 3000)),
-      ]);
-      if (banned) return;
-    } catch { /* proceed on error */ }
 
     const meta = user.user_metadata || {};
     const nick = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : 'Player');
@@ -155,50 +146,31 @@
       Storage.createProfile(nick, null);
     }
     currentProfile = Storage.getProfile(nick);
+
+    // Ban check — non-blocking, just redirect if banned
+    checkBanForUser(currentUserId).catch(() => {});
+
     enterModeSelect();
   }
 
-  // Listen for auth state changes (catches OAuth redirect + initial session)
+  function showLoginButton() {
+    if (enteredGame) return;
+    el.loginLoading.style.display = 'none';
+    el.btnGoogleLogin.style.display = '';
+    el.btnGoogleLogin.disabled = false;
+    el.btnGoogleLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Google로 로그인';
+  }
+
+  // Single auth listener — handles everything (initial load + OAuth redirect + token refresh)
   supabase.auth.onAuthStateChange((event, session) => {
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && session.user) {
-      handleUser(session.user);
+    console.log('[Auth]', event, !!session);
+    if (session && session.user) {
+      enterGame(session.user);
+    } else if (event === 'INITIAL_SESSION') {
+      // No existing session — show login
+      showLoginButton();
     }
   });
-
-  // Also check existing session on page load (with 5s hard timeout)
-  (async () => {
-    el.loginLoading.style.display = 'block';
-    el.btnGoogleLogin.style.display = 'none';
-
-    // Hard timeout: if nothing happens in 5s, show login button
-    const fallbackTimer = setTimeout(() => {
-      if (!userHandled) {
-        el.loginLoading.style.display = 'none';
-        el.btnGoogleLogin.style.display = '';
-      }
-    }, 5000);
-
-    try {
-      const result = await Promise.race([
-        supabase.auth.getSession(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
-      ]);
-      const session = result?.data?.session;
-      if (session && session.user) {
-        clearTimeout(fallbackTimer);
-        await handleUser(session.user);
-        return;
-      }
-    } catch (err) {
-      console.error('Session check failed:', err);
-    }
-    // No session (and not already handled by onAuthStateChange) — show login button
-    clearTimeout(fallbackTimer);
-    if (!userHandled) {
-      el.loginLoading.style.display = 'none';
-      el.btnGoogleLogin.style.display = '';
-    }
-  })();
 
   // ========== MODE SELECT ==========
   function enterModeSelect() {
@@ -885,7 +857,7 @@
         banOverlay.style.display = 'none';
         showScreen('login');
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session && session.user) handleUser(session.user);
+          if (session && session.user) { enteredGame = false; enterGame(session.user); }
         });
         return;
       }
