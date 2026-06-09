@@ -26,7 +26,9 @@ export default async function handler(req, res) {
       const modeFilter = req.query.mode || null;
       // Filter by mode if specified
       const filtered = modeFilter
-        ? scores.filter(s => s.mode === modeFilter)
+        ? (modeFilter === 'grid'
+          ? scores.filter(s => !s.mode || s.mode === 'grid') // grid includes legacy scores
+          : scores.filter(s => s.mode === modeFilter))
         : scores.filter(s => !s.mode || s.mode === 'grid'); // default: grid (legacy)
       // Best score per player only
       const bestMap = {};
