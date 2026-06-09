@@ -165,13 +165,27 @@
     }
   });
 
-  // Also check existing session on page load
+  // Also check existing session on page load (with 5s hard timeout)
   (async () => {
     el.loginLoading.style.display = 'block';
     el.btnGoogleLogin.style.display = 'none';
+
+    // Hard timeout: if nothing happens in 5s, show login button
+    const fallbackTimer = setTimeout(() => {
+      if (!userHandled) {
+        el.loginLoading.style.display = 'none';
+        el.btnGoogleLogin.style.display = '';
+      }
+    }, 5000);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const result = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
+      ]);
+      const session = result?.data?.session;
       if (session && session.user) {
+        clearTimeout(fallbackTimer);
         await handleUser(session.user);
         return;
       }
@@ -179,6 +193,7 @@
       console.error('Session check failed:', err);
     }
     // No session (and not already handled by onAuthStateChange) — show login button
+    clearTimeout(fallbackTimer);
     if (!userHandled) {
       el.loginLoading.style.display = 'none';
       el.btnGoogleLogin.style.display = '';
