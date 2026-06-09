@@ -6,6 +6,13 @@ const redis = new Redis({
 });
 
 const SCORES_KEY = 'guillotine_scores';
+const BAN_DURATION_SEC = 30 * 60;
+
+async function banUser(userId) {
+  if (!userId) return;
+  const banKey = `ban:${userId}`;
+  await redis.set(banKey, Date.now() + BAN_DURATION_SEC * 1000, { ex: BAN_DURATION_SEC });
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,6 +44,7 @@ export default async function handler(req, res) {
       if (!entry.nickname || entry.score == null) {
         return res.status(400).json({ error: 'Invalid data' });
       }
+      const userId = entry.userId || null;
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
@@ -60,7 +68,8 @@ export default async function handler(req, res) {
 
         // 1) Click log must have enough hits matching reported kills
         if (hits.length < kills * 0.8) {
-          return res.status(403).json({ error: 'Invalid click data' });
+          await banUser(userId);
+          return res.status(403).json({ error: 'Invalid click data', banned: true });
         }
 
         const reactions = hits.map(c => c.r).filter(r => typeof r === 'number' && r > 0);
@@ -70,7 +79,8 @@ export default async function handler(req, res) {
 
           // 2) Inhuman average reaction time
           if (avgReaction < 80) {
-            return res.status(403).json({ error: 'Suspicious reaction times' });
+            await banUser(userId);
+            return res.status(403).json({ error: 'Suspicious reaction times', banned: true });
           }
           if (avgReaction < 120) suspicionScore += 3;
           else if (avgReaction < 150) suspicionScore += 1;
@@ -79,7 +89,8 @@ export default async function handler(req, res) {
           const variance = reactions.reduce((sum, r) => sum + (r - avgReaction) ** 2, 0) / reactions.length;
           const stdDev = Math.sqrt(variance);
           if (stdDev < 10 && reactions.length > 10) {
-            return res.status(403).json({ error: 'Suspicious click pattern' });
+            await banUser(userId);
+            return res.status(403).json({ error: 'Suspicious click pattern', banned: true });
           }
           if (stdDev < 20 && reactions.length > 10) suspicionScore += 2;
 
@@ -136,7 +147,8 @@ export default async function handler(req, res) {
         if (clickLog.length > 0) {
           const totalTime = clickLog[clickLog.length - 1].t - clickLog[0].t;
           if (totalTime > 0 && (clickLog.length / (totalTime / 1000)) > 8) {
-            return res.status(403).json({ error: 'Click rate too high' });
+            await banUser(userId);
+            return res.status(403).json({ error: 'Click rate too high', banned: true });
           }
         }
 
@@ -171,11 +183,13 @@ export default async function handler(req, res) {
         // 9) Combined suspicion threshold
         // High kills + high suspicion = reject
         if (suspicionScore >= 6) {
-          return res.status(403).json({ error: 'Abnormal play pattern detected' });
+          await banUser(userId);
+          return res.status(403).json({ error: 'Abnormal play pattern detected', banned: true });
         }
         // Lower threshold for very high scores
         if (suspicionScore >= 4 && kills > 60) {
-          return res.status(403).json({ error: 'Abnormal play pattern detected' });
+          await banUser(userId);
+          return res.status(403).json({ error: 'Abnormal play pattern detected', banned: true });
         }
       }
 

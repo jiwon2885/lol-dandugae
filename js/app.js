@@ -302,9 +302,10 @@
     });
     currentProfile = Storage.getProfile(currentNickname);
 
-    // Save score
+    // Save score (check if banned by anti-cheat)
     Storage.addScore({
       nickname: currentNickname,
+      userId: currentUserId,
       kills: stats.kills,
       durationSec: stats.duration,
       reactionMs: stats.avgReaction,
@@ -315,6 +316,11 @@
       kpm: stats.kpm,
       clickLog: stats.clickLog || [],
       mousePath: stats.mousePath || [],
+    }).then(result => {
+      if (result && result.banned) {
+        // Server detected cheating — show ban screen
+        checkBanForUser(currentUserId);
+      }
     });
 
     // Use the same calcScore as storage (single source of truth)
@@ -404,7 +410,7 @@
   // ========== PAUSE / RESUME (fullscreen exit detection) ==========
   let gamePaused = false;
   let pauseCount = 0;
-  const MAX_PAUSES = 1;
+  const MAX_PAUSES = 2;
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && gameEngine && gameEngine.running) {

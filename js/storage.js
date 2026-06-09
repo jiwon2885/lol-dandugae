@@ -63,13 +63,19 @@ const Storage = (() => {
     const score = calcScore(entry);
     const data = { ...entry, score };
     try {
-      await fetch(API_URL, {
+      const resp = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (resp.status === 403) {
+        const body = await resp.json().catch(() => ({}));
+        if (body.banned) return { banned: true };
+      }
+      return { banned: false };
     } catch (err) {
       console.error('Score submit failed:', err);
+      return { banned: false };
     }
   }
 
