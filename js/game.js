@@ -23,6 +23,8 @@ class GameEngine {
     this.rafId = null;
     this.lastTime = 0;
     this._elapsedMs = 0; // precise elapsed time tracking
+    this._clickLog = []; // anti-cheat: record every click timestamp + reaction
+    this._perfNow = performance.now.bind(performance); // protect from override
 
     // Fix canvas to screen resolution — CSS size matches pixel size 1:1
     // No CSS scaling = zoom/resize cannot shrink the game area
@@ -70,9 +72,11 @@ class GameEngine {
     this.reactionTimes = [];
     this.timeLeft = this.duration;
     this._elapsedMs = 0;
+    this._clickLog = [];
+    this._gameStartTime = this._perfNow();
     this.animations = [];
     this._spawnTarget();
-    this.lastTime = performance.now();
+    this.lastTime = this._perfNow();
     this._loop(this.lastTime);
   }
 
@@ -140,6 +144,7 @@ class GameEngine {
       timeLeft: this.timeLeft,
       duration: this.duration,
       kpm,
+      clickLog: this._clickLog,
     };
   }
 
@@ -165,13 +170,16 @@ class GameEngine {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
+    const clickTime = this._perfNow() - this._gameStartTime;
+
     if (this.target) {
       const t = this.target;
       const dist = Math.hypot(mx - t.x, my - t.y);
       if (dist <= t.size / 2) {
         // HIT
-        const reaction = performance.now() - this.targetSpawnTime;
+        const reaction = this._perfNow() - this.targetSpawnTime;
         this.reactionTimes.push(Math.round(reaction));
+        this._clickLog.push({ t: Math.round(clickTime), r: Math.round(reaction), h: 1 });
         this.combo++;
         let bonus = 0;
         if (this.combo >= 30) bonus = 3;
@@ -192,6 +200,7 @@ class GameEngine {
     // MISS
     this.misses++;
     this.combo = 0;
+    this._clickLog.push({ t: Math.round(clickTime), h: 0 });
     this._spawnMissAnimation(mx, my);
     AudioManager.playMissSound();
     this.onTick(this._getStats());

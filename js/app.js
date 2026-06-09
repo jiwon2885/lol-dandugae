@@ -306,6 +306,7 @@
       bonusPoints: stats.bonusPoints,
       grade,
       kpm: stats.kpm,
+      clickLog: stats.clickLog || [],
     });
 
     // Use the same calcScore as storage (single source of truth)

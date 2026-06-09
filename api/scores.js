@@ -40,15 +40,47 @@ export default async function handler(req, res) {
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
-      const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), 300));
+      const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), 120));
       const durationSec = Number(entry.durationSec) || 30;
       const accuracy = Math.max(0, Math.min(Math.floor(Number(entry.accuracy) || 0), 100));
       const maxCombo = Math.max(0, Math.min(Math.floor(Number(entry.maxCombo) || 0), kills));
       const reactionMs = Math.max(0, Math.min(Math.floor(Number(entry.reactionMs) || 0), 9999));
       const bonusPoints = Math.max(0, Math.min(Math.floor(Number(entry.bonusPoints) || 0), kills * 3));
-      const kpm = Math.max(0, Math.min(Math.floor(Number(entry.kpm) || 0), 600));
+      const kpm = Math.max(0, Math.min(Math.floor(Number(entry.kpm) || 0), 240));
       const allowedGrades = ['C', 'B', 'A', 'S', 'S+'];
       const grade = allowedGrades.includes(entry.grade) ? entry.grade : 'C';
+
+      // Anti-cheat: validate click log
+      const clickLog = Array.isArray(entry.clickLog) ? entry.clickLog : [];
+      if (kills > 0) {
+        const hits = clickLog.filter(c => c.h === 1);
+        // Click log must have enough hits matching reported kills (allow small margin)
+        if (hits.length < kills * 0.8) {
+          return res.status(403).json({ error: 'Invalid click data' });
+        }
+        // Check for inhuman reaction times (avg < 80ms = bot)
+        const reactions = hits.map(c => c.r).filter(r => typeof r === 'number' && r > 0);
+        if (reactions.length > 5) {
+          const avgReaction = reactions.reduce((a, b) => a + b, 0) / reactions.length;
+          if (avgReaction < 80) {
+            return res.status(403).json({ error: 'Suspicious reaction times' });
+          }
+          // Check for too-uniform timing (bot pattern: std dev < 15ms)
+          const mean = avgReaction;
+          const variance = reactions.reduce((sum, r) => sum + (r - mean) ** 2, 0) / reactions.length;
+          const stdDev = Math.sqrt(variance);
+          if (stdDev < 15 && reactions.length > 10) {
+            return res.status(403).json({ error: 'Suspicious click pattern' });
+          }
+        }
+        // Check click rate: max ~4 clicks/sec sustained is humanly possible
+        if (clickLog.length > 0) {
+          const totalTime = clickLog[clickLog.length - 1].t - clickLog[0].t;
+          if (totalTime > 0 && (clickLog.length / (totalTime / 1000)) > 8) {
+            return res.status(403).json({ error: 'Click rate too high' });
+          }
+        }
+      }
 
       // Recalculate score server-side (don't trust client score)
       const killPts = kills * 10;
