@@ -152,8 +152,13 @@ export default async function handler(req, res) {
           }
         }
 
-        // 7) Mouse path analysis: no mouse movement data = suspicious
-        if (mousePath.length < 10 && kills > 15) {
+        // 7) Mouse path analysis: no mouse movement = external program
+        // A real player MUST generate mouse movement to click targets
+        if (mousePath.length < 5 && kills > 10) {
+          suspicionScore += 6; // instant ban — impossible to play without mouse
+        } else if (mousePath.length < 15 && kills > 20) {
+          suspicionScore += 4;
+        } else if (mousePath.length < 10 && kills > 15) {
           suspicionScore += 3;
         }
 
@@ -180,14 +185,36 @@ export default async function handler(req, res) {
           }
         }
 
-        // 9) Combined suspicion threshold
-        // High kills + high suspicion = reject
-        if (suspicionScore >= 6) {
+        // 9) Mouse-to-target correlation: external programs move directly to target
+        if (mousePath.length > 10 && hits.length > 10) {
+          const hitsWithPos = hits.filter(c => typeof c.tx === 'number');
+          if (hitsWithPos.length > 5) {
+            // Check if mouse path endpoints match target positions too precisely
+            let directMoves = 0;
+            let checked = 0;
+            for (const hit of hitsWithPos) {
+              // Find mouse sample closest in time before the hit
+              const nearby = mousePath.filter(m => m.t < hit.t && m.t > hit.t - 500);
+              if (nearby.length < 2) continue;
+              checked++;
+              const last = nearby[nearby.length - 1];
+              // If mouse position is very close to target center
+              const distToTarget = Math.hypot(last.x - hit.tx, last.y - hit.ty);
+              if (distToTarget < 15) directMoves++;
+            }
+            // If >70% of checked moves go exactly to target center = bot
+            if (checked > 5 && (directMoves / checked) > 0.7) {
+              suspicionScore += 3;
+            }
+          }
+        }
+
+        // 10) Combined suspicion threshold
+        if (suspicionScore >= 5) {
           await banUser(userId);
           return res.status(403).json({ error: 'Abnormal play pattern detected', banned: true });
         }
-        // Lower threshold for very high scores
-        if (suspicionScore >= 4 && kills > 60) {
+        if (suspicionScore >= 3 && kills > 50) {
           await banUser(userId);
           return res.status(403).json({ error: 'Abnormal play pattern detected', banned: true });
         }
