@@ -1,4 +1,11 @@
 /* ===== App Controller ===== */
+window.onerror = function(msg, src, line, col, err) {
+  document.title = 'ERR: ' + msg;
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:red;color:white;padding:12px;font-size:14px;word-break:break-all;';
+  d.textContent = '[JS Error] ' + msg + ' at ' + src + ':' + line + ':' + col;
+  document.body.appendChild(d);
+};
 (() => {
   // --- Supabase Auth ---
   const SUPABASE_URL = 'https://kksnddwgfnxaztboegax.supabase.co';

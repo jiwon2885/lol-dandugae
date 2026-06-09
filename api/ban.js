@@ -9,7 +9,7 @@ const BAN_DURATION_SEC = 30 * 60; // 30 minutes
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -30,6 +30,24 @@ export default async function handler(req, res) {
         return res.json({ banned: true, banUntil: Number(banUntil) });
       }
       return res.json({ banned: false });
+    }
+
+    if (req.method === 'DELETE') {
+      // Also support unban by nickname: find userId from scores
+      const nickname = req.query?.nickname || req.body?.nickname;
+      if (nickname && !req.query?.userId && !req.body?.userId) {
+        const SCORES_KEY = 'guillotine_scores';
+        const scores = (await redis.get(SCORES_KEY)) || [];
+        const match = scores.find(s => s.nickname === nickname && s.userId);
+        if (match) {
+          const nBanKey = `ban:${match.userId}`;
+          await redis.del(nBanKey);
+          return res.json({ unbanned: true, userId: match.userId });
+        }
+        return res.status(404).json({ error: 'User not found in scores' });
+      }
+      await redis.del(banKey);
+      return res.json({ unbanned: true });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

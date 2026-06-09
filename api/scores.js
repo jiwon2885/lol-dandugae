@@ -65,12 +65,12 @@ export default async function handler(req, res) {
       const allowedModes = ['grid', 'triple', 'tracking'];
       const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
 
-      // Anti-cheat: validate click log
+      // Anti-cheat: validate click log (skip for tracking mode — different input pattern)
       const clickLog = Array.isArray(entry.clickLog) ? entry.clickLog : [];
       const mousePath = Array.isArray(entry.mousePath) ? entry.mousePath : [];
       let suspicionScore = 0; // accumulate suspicion, reject at threshold
 
-      if (kills > 0) {
+      if (kills > 0 && mode !== 'tracking') {
         const hits = clickLog.filter(c => c.h === 1);
 
         // 1) Click log must have enough hits matching reported kills
@@ -236,6 +236,7 @@ export default async function handler(req, res) {
       const scores = (await redis.get(SCORES_KEY)) || [];
       scores.push({
         nickname,
+        userId: userId || undefined,
         kills,
         durationSec,
         reactionMs,
