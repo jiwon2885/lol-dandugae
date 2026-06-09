@@ -307,6 +307,7 @@
       grade,
       kpm: stats.kpm,
       clickLog: stats.clickLog || [],
+      mousePath: stats.mousePath || [],
     });
 
     // Use the same calcScore as storage (single source of truth)

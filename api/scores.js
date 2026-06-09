@@ -52,33 +52,130 @@ export default async function handler(req, res) {
 
       // Anti-cheat: validate click log
       const clickLog = Array.isArray(entry.clickLog) ? entry.clickLog : [];
+      const mousePath = Array.isArray(entry.mousePath) ? entry.mousePath : [];
+      let suspicionScore = 0; // accumulate suspicion, reject at threshold
+
       if (kills > 0) {
         const hits = clickLog.filter(c => c.h === 1);
-        // Click log must have enough hits matching reported kills (allow small margin)
+
+        // 1) Click log must have enough hits matching reported kills
         if (hits.length < kills * 0.8) {
           return res.status(403).json({ error: 'Invalid click data' });
         }
-        // Check for inhuman reaction times (avg < 80ms = bot)
+
         const reactions = hits.map(c => c.r).filter(r => typeof r === 'number' && r > 0);
+
         if (reactions.length > 5) {
           const avgReaction = reactions.reduce((a, b) => a + b, 0) / reactions.length;
+
+          // 2) Inhuman average reaction time
           if (avgReaction < 80) {
             return res.status(403).json({ error: 'Suspicious reaction times' });
           }
-          // Check for too-uniform timing (bot pattern: std dev < 15ms)
-          const mean = avgReaction;
-          const variance = reactions.reduce((sum, r) => sum + (r - mean) ** 2, 0) / reactions.length;
+          if (avgReaction < 120) suspicionScore += 3;
+          else if (avgReaction < 150) suspicionScore += 1;
+
+          // 3) Too-uniform timing (bot pattern)
+          const variance = reactions.reduce((sum, r) => sum + (r - avgReaction) ** 2, 0) / reactions.length;
           const stdDev = Math.sqrt(variance);
-          if (stdDev < 15 && reactions.length > 10) {
+          if (stdDev < 10 && reactions.length > 10) {
             return res.status(403).json({ error: 'Suspicious click pattern' });
           }
+          if (stdDev < 20 && reactions.length > 10) suspicionScore += 2;
+
+          // 4) Fitts's Law check: distance vs reaction time correlation
+          // Humans take longer to reach farther targets. Bots don't.
+          if (hits.length > 8) {
+            const hitsWithPos = hits.filter(c => typeof c.tx === 'number' && typeof c.ty === 'number');
+            if (hitsWithPos.length > 8) {
+              // Calculate distances between consecutive targets
+              const distances = [];
+              const rTimes = [];
+              for (let i = 1; i < hitsWithPos.length; i++) {
+                const dx = hitsWithPos[i].tx - hitsWithPos[i - 1].tx;
+                const dy = hitsWithPos[i].ty - hitsWithPos[i - 1].ty;
+                distances.push(Math.sqrt(dx * dx + dy * dy));
+                rTimes.push(hitsWithPos[i].r);
+              }
+              // Calculate correlation coefficient
+              if (distances.length > 5) {
+                const n = distances.length;
+                const avgD = distances.reduce((a, b) => a + b, 0) / n;
+                const avgR = rTimes.reduce((a, b) => a + b, 0) / n;
+                let num = 0, denD = 0, denR = 0;
+                for (let i = 0; i < n; i++) {
+                  const dd = distances[i] - avgD;
+                  const dr = rTimes[i] - avgR;
+                  num += dd * dr;
+                  denD += dd * dd;
+                  denR += dr * dr;
+                }
+                const den = Math.sqrt(denD * denR);
+                const corr = den > 0 ? num / den : 0;
+                // Humans: positive correlation (farther = slower). Bots: near-zero or negative.
+                if (corr < -0.1 && kills > 20) suspicionScore += 2;
+                if (corr < 0.05 && kills > 30) suspicionScore += 1;
+              }
+            }
+          }
+
+          // 5) Hit offset analysis: average distance from target center
+          const offsets = hits.map(c => c.d).filter(d => typeof d === 'number');
+          if (offsets.length > 10) {
+            const avgOffset = offsets.reduce((a, b) => a + b, 0) / offsets.length;
+            // Bots click very close to center consistently (avg < 5px)
+            if (avgOffset < 3) suspicionScore += 3;
+            else if (avgOffset < 6) suspicionScore += 1;
+            // Check offset variance — bots have very low variance
+            const offVar = offsets.reduce((s, o) => s + (o - avgOffset) ** 2, 0) / offsets.length;
+            if (Math.sqrt(offVar) < 3 && avgOffset < 8) suspicionScore += 2;
+          }
         }
-        // Check click rate: max ~4 clicks/sec sustained is humanly possible
+
+        // 6) Click rate check
         if (clickLog.length > 0) {
           const totalTime = clickLog[clickLog.length - 1].t - clickLog[0].t;
           if (totalTime > 0 && (clickLog.length / (totalTime / 1000)) > 8) {
             return res.status(403).json({ error: 'Click rate too high' });
           }
+        }
+
+        // 7) Mouse path analysis: no mouse movement data = suspicious
+        if (mousePath.length < 10 && kills > 15) {
+          suspicionScore += 3;
+        }
+
+        // 8) Mouse path straightness check
+        if (mousePath.length > 20) {
+          // Sample segments and check curvature
+          let straightSegments = 0;
+          let totalSegments = 0;
+          for (let i = 2; i < mousePath.length; i += 3) {
+            const p0 = mousePath[i - 2];
+            const p1 = mousePath[i - 1];
+            const p2 = mousePath[i];
+            // Calculate deviation of middle point from straight line p0->p2
+            const lineLen = Math.hypot(p2.x - p0.x, p2.y - p0.y);
+            if (lineLen < 20) continue; // skip short segments
+            const cross = Math.abs((p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x));
+            const deviation = cross / lineLen;
+            totalSegments++;
+            if (deviation < 2) straightSegments++; // nearly perfectly straight
+          }
+          // If >80% of segments are perfectly straight = bot-like
+          if (totalSegments > 5 && (straightSegments / totalSegments) > 0.85) {
+            suspicionScore += 3;
+          }
+        }
+
+        // 9) Combined suspicion threshold
+        // High kills + high suspicion = reject
+        if (suspicionScore >= 6) {
+          return res.status(403).json({ error: 'Abnormal play pattern detected' });
+        }
+        // Lower threshold for very high scores
+        if (suspicionScore >= 4 && kills > 60) {
+          return res.status(403).json({ error: 'Abnormal play pattern detected' });
         }
       }
 

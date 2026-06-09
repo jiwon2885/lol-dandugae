@@ -25,6 +25,9 @@ class GameEngine {
     this._elapsedMs = 0; // precise elapsed time tracking
     this._clickLog = []; // anti-cheat: record every click timestamp + reaction
     this._perfNow = performance.now.bind(performance); // protect from override
+    this._mousePath = []; // anti-cheat: mouse movement samples
+    this._lastMousePos = null;
+    this._mouseSampleTimer = 0;
 
     // Fix canvas to screen resolution — CSS size matches pixel size 1:1
     // No CSS scaling = zoom/resize cannot shrink the game area
@@ -53,7 +56,21 @@ class GameEngine {
       this._handleClick(touch);
     };
     this._boundContextMenu = (e) => e.preventDefault();
+    // Anti-cheat: sample mouse movement path (~every 30ms)
+    this._boundMouseMove = (e) => {
+      if (!this.running) return;
+      const now = this._perfNow();
+      if (now - this._mouseSampleTimer < 30) return;
+      this._mouseSampleTimer = now;
+      const rect = this.canvas.getBoundingClientRect();
+      this._lastMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      // Keep last 200 samples max (rolling window)
+      if (this._mousePath.length < 200) {
+        this._mousePath.push({ x: this._lastMousePos.x, y: this._lastMousePos.y, t: Math.round(now - (this._gameStartTime || now)) });
+      }
+    };
     this.canvas.addEventListener('mousedown', this._boundClick);
+    this.canvas.addEventListener('mousemove', this._boundMouseMove);
     this.canvas.addEventListener('contextmenu', this._boundContextMenu);
     this.canvas.addEventListener('touchstart', this._boundTouch, { passive: false });
   }
@@ -73,6 +90,9 @@ class GameEngine {
     this.timeLeft = this.duration;
     this._elapsedMs = 0;
     this._clickLog = [];
+    this._mousePath = [];
+    this._lastMousePos = null;
+    this._mouseSampleTimer = 0;
     this._gameStartTime = this._perfNow();
     this.animations = [];
     this._spawnTarget();
@@ -115,6 +135,10 @@ class GameEngine {
       this.canvas.removeEventListener('mousedown', this._boundClick);
       this._boundClick = null;
     }
+    if (this._boundMouseMove) {
+      this.canvas.removeEventListener('mousemove', this._boundMouseMove);
+      this._boundMouseMove = null;
+    }
     if (this._boundTouch) {
       this.canvas.removeEventListener('touchstart', this._boundTouch);
       this._boundTouch = null;
@@ -145,6 +169,7 @@ class GameEngine {
       duration: this.duration,
       kpm,
       clickLog: this._clickLog,
+      mousePath: this._mousePath,
     };
   }
 
@@ -179,7 +204,11 @@ class GameEngine {
         // HIT
         const reaction = this._perfNow() - this.targetSpawnTime;
         this.reactionTimes.push(Math.round(reaction));
-        this._clickLog.push({ t: Math.round(clickTime), r: Math.round(reaction), h: 1 });
+        // d: hit offset from center, tx/ty: target pos (for Fitts's law)
+        this._clickLog.push({
+          t: Math.round(clickTime), r: Math.round(reaction), h: 1,
+          d: Math.round(dist), tx: Math.round(t.x), ty: Math.round(t.y),
+        });
         this.combo++;
         let bonus = 0;
         if (this.combo >= 30) bonus = 3;
