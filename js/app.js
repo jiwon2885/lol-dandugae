@@ -36,7 +36,6 @@ window.onerror = function(msg, src, line, col, err) {
     hudTime: document.getElementById('hud-time'),
     hudKills: document.getElementById('hud-kills'),
     hudCombo: document.getElementById('hud-combo'),
-    hudReaction: document.getElementById('hud-reaction'),
     countdownOverlay: document.getElementById('countdown-overlay'),
     countdownNum: document.getElementById('countdown-num'),
 
@@ -45,7 +44,6 @@ window.onerror = function(msg, src, line, col, err) {
     resultBestBadge: document.getElementById('result-best-badge'),
     resKills: document.getElementById('res-kills'),
     resAccuracy: document.getElementById('res-accuracy'),
-    resReaction: document.getElementById('res-reaction'),
     resCombo: document.getElementById('res-combo'),
     resKpm: document.getElementById('res-kpm'),
     btnRetry: document.getElementById('btn-retry'),
@@ -530,7 +528,6 @@ window.onerror = function(msg, src, line, col, err) {
 
     el.hudKills.textContent = stats.kills;
     el.hudCombo.textContent = stats.combo;
-    el.hudReaction.textContent = stats.avgReaction ? stats.avgReaction + 'ms' : '-';
 
     if (currentMode === 'tracking') {
       const trackEl = document.getElementById('hud-track-time');
@@ -610,7 +607,6 @@ window.onerror = function(msg, src, line, col, err) {
 
     el.resKills.textContent = stats.kills;
     el.resAccuracy.textContent = stats.accuracy + '%';
-    el.resReaction.textContent = stats.avgReaction ? stats.avgReaction + 'ms' : '-';
     el.resCombo.textContent = stats.maxCombo;
     el.resKpm.textContent = stats.kpm;
   }
@@ -725,7 +721,6 @@ window.onerror = function(msg, src, line, col, err) {
         <td>${escapeHtml(String(r.kills))}</td>
         <td>${escapeHtml(String(r.accuracy))}%</td>
         <td>${escapeHtml(String(r.maxCombo || 0))}</td>
-        <td>${escapeHtml(String(r.reactionMs))}ms</td>
         <td>${escapeHtml(String(r.grade))}</td>
       </tr>
     `).join('');
