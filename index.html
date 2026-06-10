@@ -319,14 +319,15 @@
   <div id="screen-ranking" class="screen">
     <div class="ranking-container">
       <h2 class="ranking-title">RANKING</h2>
-      <div id="ranking-mode-label" class="ranking-mode-label"></div>
+      <div id="ranking-mode-label" class="ranking-mode-label" style="display:none"></div>
+      <div class="ranking-view-toggle">
+        <button class="ranking-view-btn active" data-rview="normal">일반</button>
+        <button class="ranking-view-btn" data-rview="fps">FPS</button>
+      </div>
       <div class="ranking-tabs">
         <button class="ranking-tab active" data-mode="grid">Grid Shot</button>
         <button class="ranking-tab" data-mode="triple">Triple Shot</button>
         <button class="ranking-tab" data-mode="tracking">Tracking</button>
-        <button class="ranking-tab" data-mode="fps-grid">FPS Grid</button>
-        <button class="ranking-tab" data-mode="fps-triple">FPS Triple</button>
-        <button class="ranking-tab" data-mode="fps-tracking">FPS Tracking</button>
       </div>
       <div id="podium" class="podium"></div>
       <div class="ranking-table-wrap">

@@ -1307,25 +1307,39 @@
   // ========== RANKING ==========
   const podiumEl = document.getElementById('podium');
   let rankingMode = 'grid';
+  let rankingFpsView = false; // separate from game fpsView
 
-  // Ranking tab switching
+  function getRankingEffectiveMode() {
+    return rankingFpsView ? 'fps-' + rankingMode : rankingMode;
+  }
+
+  // Ranking view toggle (일반 / FPS)
+  document.querySelectorAll('.ranking-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rankingFpsView = (btn.dataset.rview === 'fps');
+      document.querySelectorAll('.ranking-view-btn').forEach(b => b.classList.toggle('active', b === btn));
+      loadRankingData(getRankingEffectiveMode());
+    });
+  });
+
+  // Ranking mode tab switching
   document.querySelectorAll('.ranking-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       rankingMode = tab.dataset.mode;
       document.querySelectorAll('.ranking-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === rankingMode));
-      loadRankingData(rankingMode);
+      loadRankingData(getRankingEffectiveMode());
     });
   });
 
   async function showRanking() {
     showScreen('ranking');
     rankingMode = currentMode;
+    rankingFpsView = fpsView;
+    // Sync view toggle
+    document.querySelectorAll('.ranking-view-btn').forEach(b => b.classList.toggle('active', b.dataset.rview === (rankingFpsView ? 'fps' : 'normal')));
     // Set active tab
     document.querySelectorAll('.ranking-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === rankingMode));
-    // Show mode label
-    const modeLabel = document.getElementById('ranking-mode-label');
-    if (modeLabel) modeLabel.textContent = MODE_LABELS[rankingMode] || '';
-    loadRankingData(rankingMode);
+    loadRankingData(getRankingEffectiveMode());
   }
 
   async function loadRankingData(mode) {

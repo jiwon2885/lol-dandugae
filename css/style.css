@@ -1707,6 +1707,33 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 }
 
 /* ===== Ranking Tabs ===== */
+.ranking-view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.ranking-view-btn {
+  padding: 7px 28px;
+  border: 1px solid rgba(200,170,110,0.2);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ranking-view-btn.active {
+  background: rgba(200,169,110,0.15);
+  color: var(--gold-bright);
+  border-color: var(--gold);
+}
+.ranking-view-btn:hover:not(.active) {
+  background: rgba(200,169,110,0.06);
+  border-color: rgba(200,169,110,0.35);
+}
 .ranking-tabs {
   display: flex;
   justify-content: center;
