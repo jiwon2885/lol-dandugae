@@ -106,9 +106,32 @@
   let resultParticlesCtrl = null;
 
   // --- Screen management ---
-  function showScreen(name) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
+  let _screenTransitioning = false;
+  function showScreen(name, skipTransition) {
+    const currentActive = Object.values(screens).find(s => s.classList.contains('active'));
+    const target = screens[name];
+
+    // Skip transition for game screen (needs to be instant) or if already showing
+    if (skipTransition || name === 'game' || !currentActive || currentActive === target) {
+      Object.values(screens).forEach(s => { s.classList.remove('active', 'screen-exit'); });
+      target.classList.add('active');
+    } else if (!_screenTransitioning) {
+      _screenTransitioning = true;
+      currentActive.classList.add('screen-exit');
+      currentActive.classList.remove('active');
+      setTimeout(() => {
+        currentActive.classList.remove('screen-exit');
+        Object.values(screens).forEach(s => { s.classList.remove('active', 'screen-exit'); });
+        target.classList.add('active');
+        _screenTransitioning = false;
+      }, 200);
+    } else {
+      // Fallback if already transitioning
+      Object.values(screens).forEach(s => { s.classList.remove('active', 'screen-exit'); });
+      target.classList.add('active');
+      _screenTransitioning = false;
+    }
+
     // Manage ambient particles
     if (loginParticles) {
       if (name === 'login') loginParticles.start(); else loginParticles.stop();

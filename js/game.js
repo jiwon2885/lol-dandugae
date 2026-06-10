@@ -248,7 +248,7 @@ class GameEngine {
       ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
       : null;
 
-    this.target = { x, y, size: this.targetSize, faceImg, opacity: 1 };
+    this.target = { x, y, size: this.targetSize, faceImg, opacity: 1, born: this._perfNow() };
     this.targetSpawnTime = this._perfNow();
   }
 
@@ -272,7 +272,7 @@ class GameEngine {
     const faceImg = this.faceImages.length
       ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
       : null;
-    this.targets[slot] = { x, y, size: this.targetSize, faceImg, opacity: 1, spawnTime: this._perfNow() };
+    this.targets[slot] = { x, y, size: this.targetSize, faceImg, opacity: 1, spawnTime: this._perfNow(), born: this._perfNow() };
   }
 
   // === Tracking mode: spawn a moving target with HP ===
@@ -295,6 +295,7 @@ class GameEngine {
       vy: 0,
       hp: 100,
       maxHp: 100,
+      born: this._perfNow(),
     };
   }
 
@@ -694,8 +695,23 @@ class GameEngine {
     const ctx = this.ctx;
     const r = t.size / 2;
 
+    // Smooth spawn scale-in (120ms ease-out)
+    let spawnScale = 1;
+    if (t.born) {
+      const age = this._perfNow() - t.born;
+      if (age < 120) {
+        const p = age / 120;
+        spawnScale = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      }
+    }
+
     ctx.save();
-    ctx.globalAlpha = t.opacity;
+    ctx.globalAlpha = t.opacity * spawnScale;
+    if (spawnScale < 1) {
+      ctx.translate(t.x, t.y);
+      ctx.scale(spawnScale, spawnScale);
+      ctx.translate(-t.x, -t.y);
+    }
 
     const pulse = 1 + Math.sin(this._perfNow() * 0.008) * 0.1;
     ctx.beginPath();

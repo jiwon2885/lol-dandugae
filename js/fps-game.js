@@ -483,6 +483,15 @@ class FPSGameEngine {
     const dtSec = dt / 1000;
 
     for (const target of this._targets) {
+      // Smooth spawn scale-in (150ms)
+      const age = time - target.spawnTime;
+      if (age < 150) {
+        const p = age / 150;
+        const s = 1 - Math.pow(1 - p, 3);
+        target.mesh.scale.setScalar(s);
+      } else if (target.mesh.scale.x < 0.99) {
+        target.mesh.scale.setScalar(1);
+      }
       // Tracking mode: move targets
       if (target.vel) {
         const pos = target.mesh.position;
