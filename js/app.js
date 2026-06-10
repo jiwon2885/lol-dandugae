@@ -475,11 +475,12 @@
   const pauseSensGameLabel = document.getElementById('pause-sens-game-label');
 
   const SENS_GAMES = {
-    valorant: { label: '발로란트', factor: 0.407, min: 5, max: 300, step: 1, decimals: 2, div: 100 },
-    overwatch: { label: '오버워치', factor: 0.0384, min: 10, max: 300, step: 5, decimals: 1, div: 10 },
+    raw:       { label: '일반',     factor: 1,       min: 5, max: 300, step: 1, decimals: 2, div: 100 },
+    valorant:  { label: '발로란트', factor: 0.407,   min: 5, max: 300, step: 1, decimals: 2, div: 100 },
+    overwatch: { label: '오버워치', factor: 0.0384,  min: 10, max: 300, step: 5, decimals: 1, div: 10 },
     pubg:      { label: '배그',     factor: 0.01156, min: 10, max: 800, step: 5, decimals: 0, div: 10 },
   };
-  let currentSensGame = localStorage.getItem('fps_sens_game') || 'valorant';
+  let currentSensGame = localStorage.getItem('fps_sens_game') || 'raw';
 
   function getGameSensFromInternal(internal, game) {
     return internal / SENS_GAMES[game].factor;
