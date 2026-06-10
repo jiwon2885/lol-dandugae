@@ -682,7 +682,7 @@
 
   // ========== GAME HISTORY (localStorage) ==========
   const HISTORY_KEY = 'guillotine_history';
-  const MAX_HISTORY = 20;
+  const MAX_HISTORY = 5;
 
   function getHistory(mode) {
     try {
@@ -717,7 +717,7 @@
     const maxS = Math.max(...scores);
     const minS = Math.min(...scores);
     const range = maxS - minS || 1;
-    const padT = 12, padB = 6, padL = 4, padR = 4;
+    const padT = 12, padB = 22, padL = 4, padR = 4;
     const plotW = w - padL - padR;
     const plotH = h - padT - padB;
 
@@ -787,13 +787,11 @@
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Score label on last point
-      if (isLast) {
-        ctx.font = '700 11px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#f0d48a';
-        ctx.fillText(scores[i] + 'pt', x, y - 10);
-      }
+      // Score label below every point
+      ctx.font = isLast ? '700 11px Inter, sans-serif' : '600 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = isLast ? '#f0d48a' : isBest ? '#c8a96e' : 'rgba(200,169,110,0.6)';
+      ctx.fillText(scores[i], x, y + (isLast ? 16 : isBest ? 15 : 14));
     }
   }
 
