@@ -113,12 +113,12 @@
       </div>
       <div class="lobby-header">
         <div class="lobby-header-left">
-          <button id="btn-change-mode" class="btn-mode-back">← 모드선택</button>
+          <button id="btn-change-mode" class="btn-mode-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> 모드선택</button>
         </div>
         <div class="lobby-header-right">
           <span id="lobby-nickname" class="nick-badge"></span>
-          <button id="btn-settings" class="btn-settings" title="설정">⚙</button>
-          <button id="btn-logout" class="btn-logout" title="로그아웃">⏻</button>
+          <button id="btn-settings" class="btn-settings" title="설정"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          <button id="btn-logout" class="btn-logout" title="로그아웃"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
         </div>
       </div>
 
@@ -144,7 +144,7 @@
         </div>
         <div class="lobby-info-item">
           <span class="lobby-info-label">타겟 크기</span>
-          <span class="lobby-info-value">100px</span>
+          <span class="lobby-info-value">보통</span>
         </div>
       </div>
 
@@ -173,7 +173,7 @@
           </div>
         </div>
         <div class="setting-row">
-          <label>감도 <small id="lobby-sens-game-label" style="color:var(--text-dim)">(일반)</small></label>
+          <label>감도 <small id="lobby-sens-game-label" class="sens-game-hint">(일반)</small></label>
           <div class="slider-ctrl">
             <input type="range" id="lobby-fps-sensitivity" min="5" max="300" value="30" step="1">
             <span id="lobby-fps-sens-val" class="slider-val slider-val-editable">0.30</span>
@@ -211,7 +211,7 @@
       <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">트래킹</span><span id="hud-track-time">0.0s</span></div>
       <div class="hud-item hud-tracking" style="display:none"><span class="hud-label">트래킹 정확도</span><span id="hud-track-acc">0%</span></div>
       <span id="hud-mode-badge" class="hud-mode-badge"></span>
-      <button id="btn-pause" class="hud-pause" title="일시정지">⏸</button>
+      <button id="btn-pause" class="hud-pause" title="일시정지"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
     </div>
     <div id="urgency-vignette" class="urgency-vignette"></div>
     <canvas id="game-canvas"></canvas>
@@ -256,7 +256,7 @@
             <div class="cursor-options">
               <button class="btn-cursor pause-cursor" data-cursor="crosshair" title="십자가">+</button>
               <button class="btn-cursor pause-cursor" data-cursor="default" title="기본">↖</button>
-              <button class="btn-cursor pause-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
+              <button class="btn-cursor pause-cursor" data-cursor="dot" title="도트"><span class="cursor-dot-icon">●</span></button>
               <button class="btn-cursor pause-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
               <button class="btn-cursor pause-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
             </div>
@@ -269,7 +269,7 @@
             </div>
           </div>
           <div class="setting-row pause-fps-sens" style="display:none">
-            <label>FPS 감도 <small id="pause-sens-game-label" style="color:var(--text-dim)"></small></label>
+            <label>FPS 감도 <small id="pause-sens-game-label" class="sens-game-hint"></small></label>
             <div class="slider-ctrl">
               <input type="range" id="pause-fps-sensitivity" min="5" max="300" value="30" step="1">
               <span id="pause-fps-sens-val" class="slider-val slider-val-editable">0.30</span>
@@ -386,7 +386,7 @@
     <div class="settings-modal">
       <div class="settings-header">
         <h3>설정</h3>
-        <button id="btn-settings-close" class="btn-settings-close">✕</button>
+        <button id="btn-settings-close" class="btn-settings-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="settings-section">
         <div class="settings-section-title">소리</div>
@@ -419,7 +419,7 @@
           <div class="cursor-options">
             <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
             <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
-            <button class="btn-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
+            <button class="btn-cursor" data-cursor="dot" title="도트"><span class="cursor-dot-icon">●</span></button>
             <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
             <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
           </div>
@@ -447,7 +447,7 @@
           </div>
         </div>
         <div class="setting-row">
-          <label>감도 <small id="sens-game-label" style="color:var(--text-dim)">(일반)</small></label>
+          <label>감도 <small id="sens-game-label" class="sens-game-hint">(일반)</small></label>
           <div class="slider-ctrl">
             <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
             <span id="fps-sens-val" class="slider-val slider-val-editable">0.30</span>
