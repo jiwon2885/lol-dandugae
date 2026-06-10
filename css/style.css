@@ -369,47 +369,120 @@ body {
 /* Background preview area */
 .mode-card-bg {
   width: 100%;
-  height: 140px;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.3;
+  height: 150px;
+  background: url('../assets/bg.png') center/cover no-repeat;
+  opacity: 0.45;
   transition: all 0.4s ease;
   position: relative;
+  overflow: hidden;
+}
+.mode-card-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 14, 20, 0.35);
+  z-index: 1;
 }
 .mode-card-bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 30%, var(--bg-card) 100%);
+  background: linear-gradient(to bottom, transparent 40%, var(--bg-card) 100%);
+  z-index: 2;
 }
 
-/* Mode-specific backgrounds using generated gradients as placeholders */
-.mode-bg-grid {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(232,64,87,0.4) 0%, transparent 35%),
-    radial-gradient(circle at 30% 40%, rgba(180,20,30,0.2) 0%, transparent 25%),
-    radial-gradient(circle at 70% 60%, rgba(180,20,30,0.15) 0%, transparent 25%),
-    url('../assets/bg.png');
-  background-size: cover;
-  background-position: center;
+/* All three share the same bg image for unity */
+.mode-bg-grid, .mode-bg-triple, .mode-bg-tracking {
+  background: url('../assets/bg.png') center/cover no-repeat;
 }
-.mode-bg-triple {
-  background:
-    radial-gradient(circle at 25% 45%, rgba(232,64,87,0.35) 0%, transparent 22%),
-    radial-gradient(circle at 55% 35%, rgba(232,64,87,0.35) 0%, transparent 22%),
-    radial-gradient(circle at 75% 55%, rgba(232,64,87,0.35) 0%, transparent 22%),
-    url('../assets/bg.png');
-  background-size: cover;
-  background-position: center;
+
+/* === Preview targets (in-game style circles) === */
+.preview-target {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  /* Noxian red ring */
+  border: 2px solid rgba(232, 64, 87, 0.8);
+  box-shadow:
+    0 0 12px rgba(200, 30, 30, 0.5),
+    0 0 24px rgba(200, 30, 30, 0.2),
+    inset 0 0 8px rgba(232, 64, 87, 0.15);
+  background: radial-gradient(circle, rgba(232,64,87,0.2) 0%, rgba(180,20,30,0.35) 60%, rgba(120,10,15,0.5) 100%);
+  animation: targetPulse 2s ease-in-out infinite;
 }
-.mode-bg-tracking {
-  background:
-    radial-gradient(ellipse at 40% 50%, rgba(73,178,108,0.3) 0%, transparent 30%),
-    radial-gradient(circle at 60% 50%, rgba(232,64,87,0.3) 0%, transparent 25%),
-    linear-gradient(90deg, transparent, rgba(73,178,108,0.1) 30%, rgba(73,178,108,0.1) 70%, transparent),
-    url('../assets/bg.png');
-  background-size: cover;
-  background-position: center;
+.preview-target::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(180, 20, 30, 0.4);
+  animation: targetPulse 2s ease-in-out infinite reverse;
+}
+.preview-target::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,80,60,0.3) 0%, transparent 70%);
+}
+
+@keyframes targetPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+}
+
+/* Tracking target: moves horizontally */
+.preview-target-track {
+  top: 42%;
+  left: 30%;
+  animation: targetTrackMove 3s ease-in-out infinite;
+}
+@keyframes targetTrackMove {
+  0%   { left: 22%; transform: translate(-50%, -50%) scale(1); }
+  50%  { left: 75%; transform: translate(-50%, -50%) scale(1.05); }
+  100% { left: 22%; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Tracking HP bar preview */
+.preview-hp-bar {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(73, 217, 178, 0.25);
+  overflow: hidden;
+}
+.preview-hp-fill {
+  height: 100%;
+  width: 65%;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #5eeaaa, #2aa070);
+  animation: hpDrain 3s ease-in-out infinite;
+}
+@keyframes hpDrain {
+  0%   { width: 100%; }
+  45%  { width: 40%; }
+  55%  { width: 100%; }
+  100% { width: 100%; }
+}
+
+/* Card hover: targets glow brighter */
+.mode-card:hover .preview-target {
+  box-shadow:
+    0 0 16px rgba(232, 64, 87, 0.7),
+    0 0 32px rgba(200, 30, 30, 0.3),
+    inset 0 0 10px rgba(232, 64, 87, 0.2);
+  border-color: rgba(232, 64, 87, 1);
+}
+.mode-card:hover .preview-hp-bar {
+  border-color: rgba(73, 217, 178, 0.5);
 }
 
 .mode-card-content {
