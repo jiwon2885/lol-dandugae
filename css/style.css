@@ -946,6 +946,7 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  will-change: contents;
 }
 
 #game-hud {
@@ -1061,6 +1062,7 @@ body {
   opacity: 0;
   transition: opacity 0.5s ease;
   background: radial-gradient(ellipse at center, transparent 50%, rgba(232, 64, 87, 0.25) 100%);
+  will-change: opacity;
 }
 .urgency-vignette.active {
   opacity: 1;

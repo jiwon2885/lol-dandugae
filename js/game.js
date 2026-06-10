@@ -49,11 +49,20 @@ class GameEngine {
     this._bgCanvas = null;
     // Cached bounding rect (invalidated on resize)
     this._cachedRect = null;
+    // Reusable stats object (avoid GC from creating new object every frame)
+    this._statsObj = {
+      kills: 0, misses: 0, combo: 0, maxCombo: 0, bonusPoints: 0,
+      avgReaction: 0, accuracy: 0, timeLeft: 0, duration: 0, kpm: 0,
+      clickLog: null, mousePath: null, trackTime: 0, trackAccuracy: 0, mode: '',
+    };
 
     // Tracking mode: hold-to-fire state
     this._mouseDown = false;
     this._trackFireTimer = 0; // accumulates dt, fires every interval
     this._trackFireInterval = 100; // ms between each damage tick
+
+    // Bound loop function (avoid creating closure every frame)
+    this._boundLoop = (t) => this._loop(t);
 
     // Shared debounce for all input types (mouse + touch)
     this._lastClickTime = 0;
@@ -65,7 +74,7 @@ class GameEngine {
         this._trackFireTimer = this._trackFireInterval; // fire immediately on press
         return;
       }
-      const now = performance.now();
+      const now = this._perfNow();
       if (now - this._lastClickTime < 50) return;
       this._lastClickTime = now;
       this._handleClick(e);
@@ -76,7 +85,7 @@ class GameEngine {
     };
     this._boundTouch = (e) => {
       e.preventDefault();
-      const now = performance.now();
+      const now = this._perfNow();
       if (now - this._lastClickTime < 50) return;
       this._lastClickTime = now;
       const touch = e.touches[0];
@@ -157,9 +166,9 @@ class GameEngine {
     if (!this.paused) return;
     this.paused = false;
     this.running = true;
-    this.lastTime = performance.now();
+    this.lastTime = this._perfNow();
     // Reset spawn time so reaction isn't penalized for pause
-    this.targetSpawnTime = performance.now();
+    this.targetSpawnTime = this._perfNow();
     this._loop(this.lastTime);
   }
 
@@ -207,31 +216,27 @@ class GameEngine {
   }
 
   _getStats() {
-    const avgReaction = this.reactionTimes.length
+    const s = this._statsObj;
+    s.kills = this.kills;
+    s.misses = this.misses;
+    s.combo = this.combo;
+    s.maxCombo = this.maxCombo;
+    s.bonusPoints = this.bonusPoints;
+    s.avgReaction = this.reactionTimes.length
       ? Math.round(this.reactionTimes.reduce((a, b) => a + b, 0) / this.reactionTimes.length)
       : 0;
     const totalAttempts = this.kills + this.misses;
-    const accuracy = totalAttempts > 0 ? Math.round((this.kills / totalAttempts) * 100) : 0;
+    s.accuracy = totalAttempts > 0 ? Math.round((this.kills / totalAttempts) * 100) : 0;
+    s.timeLeft = this.timeLeft;
+    s.duration = this.duration;
     const elapsed = this.duration - this.timeLeft;
-    const kpm = elapsed > 0 ? Math.round((this.kills / elapsed) * 60) : 0;
-    const trackAccuracy = this._elapsedMs > 0 ? Math.round((this._trackTimeMs / this._elapsedMs) * 100) : 0;
-    return {
-      kills: this.kills,
-      misses: this.misses,
-      combo: this.combo,
-      maxCombo: this.maxCombo,
-      bonusPoints: this.bonusPoints,
-      avgReaction,
-      accuracy,
-      timeLeft: this.timeLeft,
-      duration: this.duration,
-      kpm,
-      clickLog: this._clickLog,
-      mousePath: this._mousePath,
-      trackTime: this._trackTimeMs,
-      trackAccuracy,
-      mode: this.mode,
-    };
+    s.kpm = elapsed > 0 ? Math.round((this.kills / elapsed) * 60) : 0;
+    s.clickLog = this._clickLog;
+    s.mousePath = this._mousePath;
+    s.trackTime = this._trackTimeMs;
+    s.trackAccuracy = this._elapsedMs > 0 ? Math.round((this._trackTimeMs / this._elapsedMs) * 100) : 0;
+    s.mode = this.mode;
+    return s;
   }
 
   _spawnTarget() {
@@ -244,7 +249,7 @@ class GameEngine {
       : null;
 
     this.target = { x, y, size: this.targetSize, faceImg, opacity: 1 };
-    this.targetSpawnTime = performance.now();
+    this.targetSpawnTime = this._perfNow();
   }
 
   // === Triple mode: spawn one of 3 target slots ===
@@ -266,7 +271,7 @@ class GameEngine {
     const faceImg = this.faceImages.length
       ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
       : null;
-    this.targets[slot] = { x, y, size: this.targetSize, faceImg, opacity: 1, spawnTime: performance.now() };
+    this.targets[slot] = { x, y, size: this.targetSize, faceImg, opacity: 1, spawnTime: this._perfNow() };
   }
 
   // === Tracking mode: spawn a moving target with HP ===
@@ -369,7 +374,8 @@ class GameEngine {
     // Tracking mode: handled by hold-fire in _updateTrackingTarget
     if (this.mode === 'tracking') return;
 
-    const rect = this.canvas.getBoundingClientRect();
+    if (!this._cachedRect) this._cachedRect = this.canvas.getBoundingClientRect();
+    const rect = this._cachedRect;
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const clickTime = this._perfNow() - this._gameStartTime;
@@ -466,7 +472,7 @@ class GameEngine {
       x, y, size, faceImg,
       combo: this.combo,
       points: 1 + (this.combo >= 30 ? 3 : this.combo >= 15 ? 2 : this.combo >= 5 ? 1 : 0),
-      startTime: performance.now(),
+      startTime: this._perfNow(),
       duration: 600,
       particles,
     });
@@ -476,7 +482,7 @@ class GameEngine {
     this.animations.push({
       type: 'miss',
       x, y,
-      startTime: performance.now(),
+      startTime: this._perfNow(),
       duration: 300,
     });
   }
@@ -484,7 +490,7 @@ class GameEngine {
   // ===== Render loop =====
   _loop(now) {
     if (!this.running && this.animations.length === 0) return;
-    this.rafId = requestAnimationFrame((t) => this._loop(t));
+    this.rafId = requestAnimationFrame(this._boundLoop);
 
     const rawDt = now - this.lastTime;
     this.lastTime = now;
@@ -565,7 +571,7 @@ class GameEngine {
     if (this._trackingInside && this._mouseDown) {
       // Active damage ring (pulsing red-orange)
       ctx.save();
-      const pulse = 1 + Math.sin(performance.now() * 0.015) * 0.08;
+      const pulse = 1 + Math.sin(this._perfNow() * 0.015) * 0.08;
       ctx.beginPath();
       ctx.arc(t.x, t.y, (r + 10) * pulse, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(232, 80, 60, 0.7)';
@@ -690,7 +696,7 @@ class GameEngine {
     ctx.save();
     ctx.globalAlpha = t.opacity;
 
-    const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.1;
+    const pulse = 1 + Math.sin(this._perfNow() * 0.008) * 0.1;
     ctx.beginPath();
     ctx.arc(t.x, t.y, (r + 8) * pulse, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(180, 20, 30, 0.6)';

@@ -453,9 +453,9 @@
     if (hudModeBadge) hudModeBadge.textContent = MODE_LABELS[currentMode] || '';
 
     // Reset urgency state
+    hudUrgent = false;
     el.hudTime.classList.remove('urgent');
-    const vig = document.getElementById('urgency-vignette');
-    if (vig) vig.classList.remove('active');
+    if (vignetteEl) vignetteEl.classList.remove('active');
 
     // Force fullscreen to prevent window shrinking exploit
     if (document.documentElement.requestFullscreen) {
@@ -463,20 +463,22 @@
     }
     showScreen('game');
 
-    // Draw background on canvas before countdown — fixed pixel size
+    // Set canvas size before countdown (engine will draw bg on start)
     const cvs = el.canvas;
-    cvs.width = window.screen.width;
-    cvs.height = window.screen.height;
-    cvs.style.width = cvs.width + 'px';
-    cvs.style.height = cvs.height + 'px';
+    const sw = window.screen.width;
+    const sh = window.screen.height;
+    cvs.width = sw;
+    cvs.height = sh;
+    cvs.style.width = sw + 'px';
+    cvs.style.height = sh + 'px';
     if (bgImage) {
       const cx = cvs.getContext('2d');
-      const scale = Math.max(cvs.width / bgImage.width, cvs.height / bgImage.height);
+      const scale = Math.max(sw / bgImage.width, sh / bgImage.height);
       const w = bgImage.width * scale;
       const h = bgImage.height * scale;
-      cx.drawImage(bgImage, (cvs.width - w) / 2, (cvs.height - h) / 2, w, h);
+      cx.drawImage(bgImage, (sw - w) / 2, (sh - h) / 2, w, h);
       cx.fillStyle = 'rgba(10, 14, 20, 0.35)';
-      cx.fillRect(0, 0, cvs.width, cvs.height);
+      cx.fillRect(0, 0, sw, sh);
     }
 
     // Start BGM + Audio context
@@ -534,6 +536,12 @@
     updateHUD({ timeLeft: gameDuration, kills: 0, combo: 0, avgReaction: 0, trackTime: 0, trackAccuracy: 0 });
   }
 
+  // Cache HUD DOM elements looked up every frame
+  const hudTrackTime = document.getElementById('hud-track-time');
+  const hudTrackAcc = document.getElementById('hud-track-acc');
+  const vignetteEl = document.getElementById('urgency-vignette');
+  let hudUrgent = false; // track urgency state to avoid redundant DOM ops
+
   function updateHUD(stats) {
     el.hudTime.textContent = typeof stats.timeLeft === 'number' ? stats.timeLeft.toFixed(1) : stats.timeLeft;
 
@@ -541,21 +549,22 @@
     el.hudCombo.textContent = stats.combo;
 
     if (currentMode === 'tracking') {
-      const trackEl = document.getElementById('hud-track-time');
-      const accEl = document.getElementById('hud-track-acc');
-      if (trackEl) trackEl.textContent = ((stats.trackTime || 0) / 1000).toFixed(1) + 's';
-      if (accEl) accEl.textContent = (stats.trackAccuracy || 0) + '%';
+      if (hudTrackTime) hudTrackTime.textContent = ((stats.trackTime || 0) / 1000).toFixed(1) + 's';
+      if (hudTrackAcc) hudTrackAcc.textContent = (stats.trackAccuracy || 0) + '%';
     }
 
-    const vignette = document.getElementById('urgency-vignette');
-    if (stats.timeLeft <= 5) {
-      el.hudTime.style.color = '#e84057';
-      el.hudTime.classList.add('urgent');
-      if (vignette) vignette.classList.add('active');
-    } else {
-      el.hudTime.style.color = '';
-      el.hudTime.classList.remove('urgent');
-      if (vignette) vignette.classList.remove('active');
+    const shouldUrgent = stats.timeLeft <= 5;
+    if (shouldUrgent !== hudUrgent) {
+      hudUrgent = shouldUrgent;
+      if (shouldUrgent) {
+        el.hudTime.style.color = '#e84057';
+        el.hudTime.classList.add('urgent');
+        if (vignetteEl) vignetteEl.classList.add('active');
+      } else {
+        el.hudTime.style.color = '';
+        el.hudTime.classList.remove('urgent');
+        if (vignetteEl) vignetteEl.classList.remove('active');
+      }
     }
   }
 
@@ -574,11 +583,13 @@
   }
 
   // ========== RESULT ==========
+  const endOverlay = document.getElementById('game-end-overlay');
+  const resultPersonalBest = document.getElementById('result-personal-best');
+
   function showResult(stats) {
     AudioManager.stopBGM();
 
     // Game end overlay animation
-    const endOverlay = document.getElementById('game-end-overlay');
     endOverlay.classList.add('active');
 
     // Wait for end animation, then transition to result
@@ -712,14 +723,9 @@
     const history = getHistory(currentMode);
     const allScores = history.map(h => h.score);
     const personalBest = Math.max(...allScores);
-    const bestEl = document.getElementById('result-personal-best');
-    if (bestEl) {
-      bestEl.textContent = '\uc790\uae30 \ucd5c\uace0: ' + personalBest + 'pt';
-      if (totalScore >= personalBest) {
-        bestEl.style.color = '#f0d48a';
-      } else {
-        bestEl.style.color = '';
-      }
+    if (resultPersonalBest) {
+      resultPersonalBest.textContent = '\uc790\uae30 \ucd5c\uace0: ' + personalBest + 'pt';
+      resultPersonalBest.style.color = totalScore >= personalBest ? '#f0d48a' : '';
     }
 
     // Render history chart (delay for end overlay + screen transition + reveal anim)
@@ -1073,9 +1079,7 @@
   }
 
   function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   el.btnRankingBack.addEventListener('click', () => enterLobby());
@@ -1133,7 +1137,7 @@
     gamePaused = false;
     if (activeCountdownInterval) { clearInterval(activeCountdownInterval); activeCountdownInterval = null; }
     el.countdownOverlay.classList.remove('active');
-    document.getElementById('game-end-overlay').classList.remove('active');
+    endOverlay.classList.remove('active');
     if (gameEngine) {
       gameEngine.destroy();
       gameEngine = null;
@@ -1314,14 +1318,15 @@
     return false;
   }
 
-  // Detect devtools via debugger timing
+  // Detect devtools via debugger timing (skip during active gameplay for performance)
   setInterval(() => {
+    if (gameEngine && gameEngine.running) return;
     const start = performance.now();
     debugger;
     if (performance.now() - start > 100) {
       activateBan();
     }
-  }, 3000);
+  }, 4000);
 
   // ========== AMBIENT PARTICLES ==========
   function initParticleCanvas(canvasId, color, count, speed) {
@@ -1330,6 +1335,8 @@
     const ctx = canvas.getContext('2d');
     const particles = [];
     let w, h, rafId = null;
+    // Pre-split color for fast alpha insertion: "rgba(r,g,b,ALPHA)" → ["rgba(r,g,b,", ")"]
+    let colorParts = color.split('ALPHA');
 
     function resize() {
       w = canvas.parentElement.clientWidth;
@@ -1365,7 +1372,7 @@
         if (p.x > w + 10) p.x = -10;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = color.replace('ALPHA', a.toFixed(2));
+        ctx.fillStyle = colorParts[0] + a.toFixed(2) + colorParts[1];
         ctx.fill();
       }
     }
@@ -1373,7 +1380,7 @@
     return {
       start() { if (!rafId) draw(); },
       stop() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } },
-      setColor(c) { color = c; },
+      setColor(c) { colorParts = c.split('ALPHA'); },
     };
   }
 
