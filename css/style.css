@@ -868,6 +868,31 @@ body {
   letter-spacing: 1.5px;
   margin-bottom: 14px;
 }
+.sens-game-btns {
+  display: flex;
+  gap: 4px;
+}
+.sens-game-btn {
+  padding: 4px 12px;
+  border: 1px solid rgba(200,169,110,0.2);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sens-game-btn.active {
+  background: rgba(200,169,110,0.15);
+  color: var(--gold-bright);
+  border-color: var(--gold);
+}
+.sens-game-btn:hover:not(.active) {
+  background: rgba(200,169,110,0.06);
+  border-color: rgba(200,169,110,0.35);
+}
 
 .setting-row {
   display: flex;

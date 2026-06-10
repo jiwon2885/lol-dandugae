@@ -47,6 +47,9 @@ class FPSGameEngine {
     this._targets = [];
     this._targetGeo = new THREE.SphereGeometry(0.5, 24, 24);
     this._hitEffects = [];
+    this._isTriple = this.mode.includes('triple');
+    this._isTracking = this.mode.includes('tracking');
+    this._targetCount = this._isTriple ? 3 : 1;
 
     this._faceTextures = this.faceImages.map(img => this._createCircleFaceTexture(img));
 
@@ -61,7 +64,7 @@ class FPSGameEngine {
     this._scene.add(pLight);
 
     this._boundMouseMove = (e) => this._onMouseMove(e);
-    this._boundClick = () => this._onShoot();
+    this._boundClick = (e) => { if (e.button === 0) this._onShoot(); };
     this._boundContextMenu = (e) => e.preventDefault();
     this._boundPointerLockChange = () => {
       if (!document.pointerLockElement && this.running && !this.paused && this.onPause) {
@@ -195,7 +198,17 @@ class FPSGameEngine {
     sphere.add(ring);
     sphere.userData.ring = ring;
 
-    const target = { mesh: sphere, spawnTime: this._perfNow(), mat };
+    const target = { mesh: sphere, spawnTime: this._perfNow(), mat, vel: null };
+    if (this._isTracking) {
+      const speed = 2.5 + Math.min(this.kills * 0.05, 3);
+      const angle = Math.random() * Math.PI * 2;
+      const elev = (Math.random() - 0.5) * 0.6;
+      target.vel = new THREE.Vector3(
+        Math.cos(angle) * speed,
+        Math.sin(elev) * speed * 0.5,
+        Math.sin(angle) * speed,
+      );
+    }
     this._targets.push(target);
     return target;
   }
@@ -213,7 +226,7 @@ class FPSGameEngine {
 
   respawnTargets() {
     while (this._targets.length > 0) this._removeTarget(this._targets[0]);
-    this._spawnTarget();
+    for (let i = 0; i < this._targetCount; i++) this._spawnTarget();
   }
 
   _onMouseMove(e) {
@@ -327,7 +340,7 @@ class FPSGameEngine {
     for (const p of this._hitEffects) { this._scene.remove(p); p.geometry.dispose(); p.material.dispose(); }
     this._hitEffects = [];
 
-    this._spawnTarget();
+    for (let i = 0; i < this._targetCount; i++) this._spawnTarget();
     this._lastTime = this._perfNow();
     this._loop(this._lastTime);
     this.requestPointerLock();
@@ -393,6 +406,18 @@ class FPSGameEngine {
     const dtSec = dt / 1000;
 
     for (const target of this._targets) {
+      // Tracking mode: move targets
+      if (target.vel) {
+        const pos = target.mesh.position;
+        pos.addScaledVector(target.vel, dtSec);
+        const b = this._roomBounds;
+        if (pos.x < b.minX) { pos.x = b.minX; target.vel.x *= -1; }
+        if (pos.x > b.maxX) { pos.x = b.maxX; target.vel.x *= -1; }
+        if (pos.y < b.minY) { pos.y = b.minY; target.vel.y *= -1; }
+        if (pos.y > b.maxY) { pos.y = b.maxY; target.vel.y *= -1; }
+        if (pos.z < b.minZ) { pos.z = b.minZ; target.vel.z *= -1; }
+        if (pos.z > b.maxZ) { pos.z = b.maxZ; target.vel.z *= -1; }
+      }
       const ring = target.mesh.userData.ring;
       if (ring) {
         ring.lookAt(this._camera.position);

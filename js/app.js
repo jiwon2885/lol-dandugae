@@ -269,9 +269,11 @@
     const infoLabels = document.querySelectorAll('.lobby-info-label');
     if (infoVals[0]) infoVals[0].textContent = dur + '초';
     if (fpsView) {
-      const fpsSens = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
-      if (infoLabels[1]) infoLabels[1].textContent = 'FPS 감도';
-      if (infoVals[1]) infoVals[1].textContent = fpsSens.toFixed(2);
+      const internal = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
+      const cfg = SENS_GAMES[currentSensGame];
+      const gameSens = getGameSensFromInternal(internal, currentSensGame);
+      if (infoLabels[1]) infoLabels[1].textContent = cfg.label + ' 감도';
+      if (infoVals[1]) infoVals[1].textContent = gameSens.toFixed(cfg.decimals);
     } else {
       const tSize = TARGET_SIZES[currentMode] || 100;
       if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
@@ -464,30 +466,71 @@
     });
   });
 
-  // FPS Sensitivity settings
+  // FPS Sensitivity settings with game-specific presets
   const fpsSensSlider = document.getElementById('fps-sensitivity');
   const fpsSensVal = document.getElementById('fps-sens-val');
   const pauseFpsSensSlider = document.getElementById('pause-fps-sensitivity');
   const pauseFpsSensVal = document.getElementById('pause-fps-sens-val');
-  const savedFpsSens = localStorage.getItem('fps_sensitivity');
-  if (savedFpsSens != null) {
-    const sliderVal = Math.round(parseFloat(savedFpsSens) * 100);
+  const sensGameLabel = document.getElementById('sens-game-label');
+  const pauseSensGameLabel = document.getElementById('pause-sens-game-label');
+
+  const SENS_GAMES = {
+    valorant: { label: '발로란트', factor: 0.407, min: 5, max: 300, step: 1, decimals: 2, div: 100 },
+    overwatch: { label: '오버워치', factor: 0.0384, min: 10, max: 300, step: 5, decimals: 1, div: 10 },
+    pubg:      { label: '배그',     factor: 0.01156, min: 10, max: 800, step: 5, decimals: 0, div: 10 },
+  };
+  let currentSensGame = localStorage.getItem('fps_sens_game') || 'valorant';
+
+  function getGameSensFromInternal(internal, game) {
+    return internal / SENS_GAMES[game].factor;
+  }
+  function getInternalFromGameSens(gameSens, game) {
+    return gameSens * SENS_GAMES[game].factor;
+  }
+
+  function applySensGame(game) {
+    currentSensGame = game;
+    const cfg = SENS_GAMES[game];
+    localStorage.setItem('fps_sens_game', game);
+    document.querySelectorAll('.sens-game-btn').forEach(b => b.classList.toggle('active', b.dataset.game === game));
+    if (sensGameLabel) sensGameLabel.textContent = '(' + cfg.label + ')';
+    if (pauseSensGameLabel) pauseSensGameLabel.textContent = '(' + cfg.label + ')';
+
+    // Update slider range
+    fpsSensSlider.min = cfg.min;
+    fpsSensSlider.max = cfg.max;
+    fpsSensSlider.step = cfg.step;
+
+    // Convert current internal sens to this game's value
+    const internal = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
+    const gameSens = getGameSensFromInternal(internal, game);
+    const clamped = Math.max(cfg.min / cfg.div, Math.min(cfg.max / cfg.div, gameSens));
+    const sliderVal = Math.round(clamped * cfg.div);
     fpsSensSlider.value = sliderVal;
-    fpsSensVal.textContent = parseFloat(savedFpsSens).toFixed(2);
+    fpsSensVal.textContent = clamped.toFixed(cfg.decimals);
     pauseFpsSensSlider.value = sliderVal;
-    pauseFpsSensVal.textContent = parseFloat(savedFpsSens).toFixed(2);
+    pauseFpsSensVal.textContent = clamped.toFixed(cfg.decimals);
   }
-  function syncFpsSens(val) {
-    const sens = (Number(val) / 100).toFixed(2);
-    fpsSensSlider.value = val;
-    fpsSensVal.textContent = sens;
-    pauseFpsSensSlider.value = val;
-    pauseFpsSensVal.textContent = sens;
-    localStorage.setItem('fps_sensitivity', sens);
-    if (gameEngine && gameEngine.sensitivity != null) gameEngine.sensitivity = parseFloat(sens);
+
+  function syncFpsSens(sliderVal) {
+    const cfg = SENS_GAMES[currentSensGame];
+    const gameSens = Number(sliderVal) / cfg.div;
+    const internal = getInternalFromGameSens(gameSens, currentSensGame);
+    fpsSensSlider.value = sliderVal;
+    fpsSensVal.textContent = gameSens.toFixed(cfg.decimals);
+    pauseFpsSensSlider.value = sliderVal;
+    pauseFpsSensVal.textContent = gameSens.toFixed(cfg.decimals);
+    localStorage.setItem('fps_sensitivity', internal.toFixed(4));
+    if (gameEngine && gameEngine.sensitivity != null) gameEngine.sensitivity = internal;
   }
+
+  // Init sensitivity from saved values
+  applySensGame(currentSensGame);
   fpsSensSlider.addEventListener('input', () => syncFpsSens(fpsSensSlider.value));
   pauseFpsSensSlider.addEventListener('input', () => syncFpsSens(pauseFpsSensSlider.value));
+  document.querySelectorAll('.sens-game-btn').forEach(btn => {
+    btn.addEventListener('click', () => applySensGame(btn.dataset.game));
+  });
 
   // Start game
   el.btnStart.addEventListener('click', () => {
