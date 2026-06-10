@@ -133,10 +133,29 @@ class FPSGameEngine {
       this._scene.add(new THREE.Line(g, mat));
     }
 
+    // Room edge lines (visible borders)
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x49d9b2, transparent: true, opacity: 0.35 });
+    const hW = W / 2, hH = H / 2, hD = D / 2;
+    const corners = [
+      [-hW,-hH,-hD], [hW,-hH,-hD], [hW,-hH,hD], [-hW,-hH,hD],
+      [-hW, hH,-hD], [hW, hH,-hD], [hW, hH,hD], [-hW, hH,hD],
+    ];
+    const edges = [
+      [0,1],[1,2],[2,3],[3,0], // bottom
+      [4,5],[5,6],[6,7],[7,4], // top
+      [0,4],[1,5],[2,6],[3,7], // vertical
+    ];
+    for (const [a, b] of edges) {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(...corners[a]), new THREE.Vector3(...corners[b])
+      ]);
+      this._scene.add(new THREE.Line(g, edgeMat));
+    }
+
     this._roomBounds = {
-      minX: -W / 2 + 1.5, maxX: W / 2 - 1.5,
-      minY: -H / 2 + 1.5, maxY: H / 2 - 1.5,
-      minZ: -D / 2 + 1.5, maxZ: D / 2 - 1.5,
+      minX: -W / 2 + 3, maxX: W / 2 - 3,
+      minY: -H / 2 + 2, maxY: H / 2 - 2,
+      minZ: -D / 2 + 3, maxZ: -3,
     };
   }
 

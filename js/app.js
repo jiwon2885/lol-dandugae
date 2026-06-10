@@ -529,10 +529,10 @@
       el.canvas.style.display = '';
       document.getElementById('fps-container').style.display = 'none';
       document.getElementById('fps-crosshair').style.display = 'none';
-      // Force fullscreen to prevent window shrinking exploit
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
+    }
+    // Force fullscreen for all modes
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
     }
     showScreen('game');
 
@@ -1184,7 +1184,7 @@
   const MAX_PAUSES = 2;
 
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && gameEngine && gameEngine.running && !fpsView) {
+    if (!document.fullscreenElement && gameEngine && gameEngine.running) {
       pauseGame('전체화면이 해제되었습니다');
     }
   });
@@ -1248,10 +1248,7 @@
 
   el.btnResume.addEventListener('click', () => {
     if (!gamePaused) return;
-    if (fpsView) {
-      // FPS mode: no fullscreen needed, just resume with countdown
-      startResumeCountdown();
-    } else if (document.documentElement.requestFullscreen) {
+    if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().then(() => {
         startResumeCountdown();
       }).catch(() => {
