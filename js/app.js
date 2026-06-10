@@ -149,6 +149,10 @@
       Storage.createProfile(nick, null);
     }
     currentProfile = Storage.getProfile(nick);
+
+    // Load user-specific sensitivity settings
+    loadUserSensitivity();
+
     enterModeSelect();
 
     // Ban check — non-blocking, runs after entering mode select
@@ -511,6 +515,7 @@
     fpsSensVal.textContent = clamped.toFixed(cfg.decimals);
     pauseFpsSensSlider.value = sliderVal;
     pauseFpsSensVal.textContent = clamped.toFixed(cfg.decimals);
+    saveUserSensitivity();
   }
 
   function syncFpsSens(sliderVal) {
@@ -523,6 +528,38 @@
     pauseFpsSensVal.textContent = gameSens.toFixed(cfg.decimals);
     localStorage.setItem('fps_sensitivity', internal.toFixed(4));
     if (gameEngine && gameEngine.sensitivity != null) gameEngine.sensitivity = internal;
+    saveUserSensitivity();
+  }
+
+  // --- Per-account sensitivity persistence ---
+  function getUserSensKey() {
+    return currentUserId ? 'user_sens_' + currentUserId : null;
+  }
+
+  function saveUserSensitivity() {
+    const key = getUserSensKey();
+    if (!key) return;
+    const data = {
+      fpsSensitivity: parseFloat(localStorage.getItem('fps_sensitivity') || '0.30'),
+      fpsSensGame: currentSensGame,
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  function loadUserSensitivity() {
+    const key = getUserSensKey();
+    if (!key) return;
+    try {
+      const data = JSON.parse(localStorage.getItem(key));
+      if (!data) return;
+      if (data.fpsSensitivity != null) {
+        localStorage.setItem('fps_sensitivity', String(data.fpsSensitivity));
+      }
+      if (data.fpsSensGame && SENS_GAMES[data.fpsSensGame]) {
+        currentSensGame = data.fpsSensGame;
+      }
+      applySensGame(currentSensGame);
+    } catch {}
   }
 
   // Init sensitivity from saved values
@@ -579,6 +616,11 @@
       document.documentElement.requestFullscreen().catch(() => {});
     }
     showScreen('game');
+
+    // Hide cursor for FPS mode (including during countdown)
+    if (isFps) {
+      screens.game.style.cursor = 'none';
+    }
 
     if (!isFps) {
       // Set canvas size before countdown (engine will draw bg on start)
@@ -737,6 +779,8 @@
       }
       document.getElementById('fps-container').style.display = 'none';
       document.getElementById('fps-crosshair').style.display = 'none';
+      // Restore cursor after FPS mode
+      screens.game.style.cursor = CURSOR_MAP[currentCursor] || 'crosshair';
       showScreen('result');
     }, 1400);
 
@@ -1282,6 +1326,8 @@
     }
     document.getElementById('fps-container').style.display = 'none';
     document.getElementById('fps-crosshair').style.display = 'none';
+    // Restore cursor after FPS mode
+    screens.game.style.cursor = CURSOR_MAP[currentCursor] || 'crosshair';
     AudioManager.stopBGM();
     el.pauseOverlay.classList.remove('active');
     if (document.fullscreenElement) {
