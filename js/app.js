@@ -734,10 +734,10 @@
   // ========== GAME ==========
   function startGame() {
     const isFps = fpsView;
-    // Toggle HUD items based on mode
-    const isTracking = currentMode === 'tracking';
-    document.querySelectorAll('.hud-tracking').forEach(item => item.style.display = isTracking ? '' : 'none');
-    document.querySelectorAll('.hud-grid').forEach(item => item.style.display = isTracking ? 'none' : '');
+    // Toggle HUD items based on mode (FPS tracking uses click-to-shoot, not hold-fire)
+    const isTrackingHud = currentMode === 'tracking' && !isFps;
+    document.querySelectorAll('.hud-tracking').forEach(item => item.style.display = isTrackingHud ? '' : 'none');
+    document.querySelectorAll('.hud-grid').forEach(item => item.style.display = isTrackingHud ? 'none' : '');
 
     // Show/hide FPS sensitivity in pause menu
     document.querySelectorAll('.pause-fps-sens').forEach(item => item.style.display = isFps ? '' : 'none');
@@ -1000,6 +1000,13 @@
     // Render result with count-up animation
     const resultCard = document.querySelector('.result-card');
     resultCard.classList.remove('reveal');
+
+    // Show mode badge on result
+    const resultModeBadge = document.getElementById('result-mode-badge');
+    if (resultModeBadge) {
+      const modeText = MODE_LABELS[currentMode] || '';
+      resultModeBadge.textContent = fpsView ? 'FPS · ' + modeText : modeText;
+    }
 
     el.resultGrade.textContent = grade;
     el.resultGrade.className = 'grade grade-' + grade.toLowerCase().replace('+', 'plus');

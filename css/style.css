@@ -1535,6 +1535,7 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 .result-card .result-personal-best { opacity: 0; }
 .result-card .history-section { opacity: 0; }
 .result-card .result-actions { opacity: 0; }
+.result-card .result-shortcut-hint { opacity: 0; }
 
 .result-card.reveal .grade-row {
   animation: resultSlideUp 0.5s 0.1s ease-out forwards;
@@ -1550,6 +1551,9 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 }
 .result-card.reveal .result-actions {
   animation: resultSlideUp 0.3s 1.0s ease-out forwards;
+}
+.result-card.reveal .result-shortcut-hint {
+  animation: resultSlideUp 0.3s 1.2s ease-out forwards;
 }
 
 @keyframes resultSlideUp {
@@ -1763,6 +1767,23 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 }
 .result-actions .btn-primary { flex: 1; }
 .result-actions .btn-secondary { flex: 1; }
+
+.result-mode-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.result-shortcut-hint {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+}
 
 /* ===== Ranking ===== */
 #screen-ranking {
