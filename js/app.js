@@ -400,6 +400,15 @@
     saveSelectedFaces();
   });
 
+  // ========== LOGOUT ==========
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    await supabase.auth.signOut();
+    currentUserId = null;
+    currentNickname = '';
+    showScreen('login');
+  });
+
   // ========== SETTINGS MODAL ==========
   const settingsOverlay = document.getElementById('settings-overlay');
   document.getElementById('btn-settings').addEventListener('click', () => {
@@ -731,6 +740,7 @@
     // Show/hide FPS sensitivity in pause menu
     document.querySelectorAll('.pause-fps-sens').forEach(item => item.style.display = isFps ? '' : 'none');
     document.querySelectorAll('.pause-normal-sens').forEach(item => item.style.display = isFps ? 'none' : '');
+    document.querySelectorAll('.pause-normal-cursor').forEach(item => item.style.display = isFps ? 'none' : '');
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
@@ -927,6 +937,9 @@
       // Restore cursor after FPS mode
       document.documentElement.classList.remove('fps-no-cursor');
       applyCursor(currentCursor);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
       showScreen('result');
     }, 1400);
 
@@ -1092,7 +1105,7 @@
 
   // ========== GAME HISTORY (localStorage) ==========
   const HISTORY_KEY = 'guillotine_history';
-  const MAX_HISTORY = 5;
+  const MAX_HISTORY = 20;
 
   function getHistory(mode) {
     try {
