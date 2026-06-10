@@ -435,11 +435,14 @@
     AudioManager.setSfxVolume(saved.sfx / 100);
   }
 
+  let currentCrosshair = 'cross';
+
   function saveSettings() {
     localStorage.setItem('loldandugae_settings', JSON.stringify({
       bgm: Number(volBgm.value),
       sfx: Number(volSfx.value),
       cursor: currentCursor,
+      crosshair: currentCrosshair,
     }));
   }
 
@@ -464,6 +467,7 @@
 
   // Cursor style
   let currentCursor = saved.cursor || 'crosshair';
+  currentCrosshair = saved.crosshair || 'cross';
   const cursorBtns = document.querySelectorAll('.btn-cursor');
 
   const CURSOR_MAP = {
@@ -485,6 +489,25 @@
     btn.addEventListener('click', () => {
       applyCursor(btn.dataset.cursor);
       saveSettings();
+    });
+  });
+
+  // FPS Crosshair style
+  function applyCrosshair(style) {
+    currentCrosshair = style;
+    const el = document.getElementById('fps-crosshair');
+    if (el) el.setAttribute('data-style', style);
+    document.querySelectorAll('.btn-crosshair').forEach(b =>
+      b.classList.toggle('active', b.dataset.ch === style)
+    );
+  }
+  applyCrosshair(currentCrosshair);
+
+  document.querySelectorAll('.btn-crosshair').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyCrosshair(btn.dataset.ch);
+      saveSettings();
+      saveUserSensitivity();
     });
   });
 
@@ -602,6 +625,7 @@
       fpsSensitivity: parseFloat(localStorage.getItem('fps_sensitivity') || '0.30'),
       fpsSensGame: currentSensGame,
       normalSensitivity: normalSensitivity,
+      crosshair: currentCrosshair,
     };
     localStorage.setItem(key, JSON.stringify(data));
   }
@@ -622,6 +646,9 @@
         normalSensitivity = data.normalSensitivity;
         localStorage.setItem('normal_sensitivity', String(normalSensitivity));
         syncNormalSens(normalSensitivity);
+      }
+      if (data.crosshair) {
+        applyCrosshair(data.crosshair);
       }
       applySensGame(currentSensGame);
     } catch {}

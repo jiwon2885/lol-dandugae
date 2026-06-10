@@ -464,26 +464,103 @@ body {
   z-index: 5;
   pointer-events: none;
 }
-.crosshair-h, .crosshair-v {
-  position: absolute;
-  background: rgba(73,217,178,0.85);
+/* Hide all inner elements by default, style sets visibility */
+.fps-crosshair .ch-h, .fps-crosshair .ch-v,
+.fps-crosshair .ch-dot, .fps-crosshair .ch-circle,
+.fps-crosshair .ch-t, .fps-crosshair .ch-b,
+.fps-crosshair .ch-l, .fps-crosshair .ch-r { position: absolute; }
+
+.fps-crosshair .ch-h, .fps-crosshair .ch-v,
+.fps-crosshair .ch-t, .fps-crosshair .ch-b,
+.fps-crosshair .ch-l, .fps-crosshair .ch-r {
+  background: rgba(73,217,178,0.9);
 }
-.crosshair-h {
-  width: 18px; height: 2px;
-  top: -1px; left: -9px;
-}
-.crosshair-v {
-  width: 2px; height: 18px;
-  top: -9px; left: -1px;
-}
-.crosshair-dot {
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  background: #49d9b2;
-  position: absolute;
-  top: -1.5px; left: -1.5px;
+.fps-crosshair .ch-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #49d9b2; top: -2px; left: -2px;
   box-shadow: 0 0 4px rgba(73,217,178,0.6);
 }
+.fps-crosshair .ch-circle {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(73,217,178,0.85);
+  top: -10px; left: -10px; background: transparent;
+}
+/* Full cross lines */
+.fps-crosshair .ch-h { width: 20px; height: 2px; top: -1px; left: -10px; }
+.fps-crosshair .ch-v { width: 2px; height: 20px; top: -10px; left: -1px; }
+/* Gap cross (4 separate arms) */
+.fps-crosshair .ch-t { width: 2px; height: 7px; left: -1px; top: -12px; }
+.fps-crosshair .ch-b { width: 2px; height: 7px; left: -1px; top: 5px; }
+.fps-crosshair .ch-l { width: 7px; height: 2px; top: -1px; left: -12px; }
+.fps-crosshair .ch-r { width: 7px; height: 2px; top: -1px; left: 5px; }
+
+/* --- Crosshair types --- */
+/* cross: simple + */
+.fps-crosshair[data-style="cross"] .ch-h,
+.fps-crosshair[data-style="cross"] .ch-v { display: block; }
+.fps-crosshair[data-style="cross"] .ch-dot,
+.fps-crosshair[data-style="cross"] .ch-circle,
+.fps-crosshair[data-style="cross"] .ch-t,
+.fps-crosshair[data-style="cross"] .ch-b,
+.fps-crosshair[data-style="cross"] .ch-l,
+.fps-crosshair[data-style="cross"] .ch-r { display: none; }
+
+/* dot: center dot only */
+.fps-crosshair[data-style="dot"] .ch-dot { display: block; width: 6px; height: 6px; top: -3px; left: -3px; }
+.fps-crosshair[data-style="dot"] .ch-h,
+.fps-crosshair[data-style="dot"] .ch-v,
+.fps-crosshair[data-style="dot"] .ch-circle,
+.fps-crosshair[data-style="dot"] .ch-t,
+.fps-crosshair[data-style="dot"] .ch-b,
+.fps-crosshair[data-style="dot"] .ch-l,
+.fps-crosshair[data-style="dot"] .ch-r { display: none; }
+
+/* circle: circle + dot */
+.fps-crosshair[data-style="circle"] .ch-circle,
+.fps-crosshair[data-style="circle"] .ch-dot { display: block; }
+.fps-crosshair[data-style="circle"] .ch-h,
+.fps-crosshair[data-style="circle"] .ch-v,
+.fps-crosshair[data-style="circle"] .ch-t,
+.fps-crosshair[data-style="circle"] .ch-b,
+.fps-crosshair[data-style="circle"] .ch-l,
+.fps-crosshair[data-style="circle"] .ch-r { display: none; }
+
+/* crossdot: cross + center dot */
+.fps-crosshair[data-style="crossdot"] .ch-h,
+.fps-crosshair[data-style="crossdot"] .ch-v,
+.fps-crosshair[data-style="crossdot"] .ch-dot { display: block; }
+.fps-crosshair[data-style="crossdot"] .ch-circle,
+.fps-crosshair[data-style="crossdot"] .ch-t,
+.fps-crosshair[data-style="crossdot"] .ch-b,
+.fps-crosshair[data-style="crossdot"] .ch-l,
+.fps-crosshair[data-style="crossdot"] .ch-r { display: none; }
+
+/* gap: 4 arms with center gap */
+.fps-crosshair[data-style="gap"] .ch-t,
+.fps-crosshair[data-style="gap"] .ch-b,
+.fps-crosshair[data-style="gap"] .ch-l,
+.fps-crosshair[data-style="gap"] .ch-r { display: block; }
+.fps-crosshair[data-style="gap"] .ch-h,
+.fps-crosshair[data-style="gap"] .ch-v,
+.fps-crosshair[data-style="gap"] .ch-dot,
+.fps-crosshair[data-style="gap"] .ch-circle { display: none; }
+
+/* Crosshair preview buttons */
+.crosshair-options {
+  display: flex; gap: 6px;
+}
+.btn-crosshair {
+  width: 40px; height: 40px;
+  border: 1px solid rgba(200,170,110,0.15);
+  border-radius: 8px;
+  background: rgba(10,14,20,0.7);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s; position: relative;
+}
+.btn-crosshair:hover { background: rgba(200,169,110,0.08); border-color: rgba(200,169,110,0.35); }
+.btn-crosshair.active { background: rgba(200,169,110,0.15); border-color: var(--gold); box-shadow: 0 0 8px var(--gold-glow); }
+.ch-preview { position: relative; width: 20px; height: 20px; }
+.ch-preview span { position: absolute; background: #49d9b2; }
 
 /* === Preview targets (in-game style circles) === */
 .preview-target {

@@ -215,10 +215,15 @@
     <div id="urgency-vignette" class="urgency-vignette"></div>
     <canvas id="game-canvas"></canvas>
     <div id="fps-container" style="display:none"></div>
-    <div id="fps-crosshair" class="fps-crosshair" style="display:none">
-      <div class="crosshair-h"></div>
-      <div class="crosshair-v"></div>
-      <div class="crosshair-dot"></div>
+    <div id="fps-crosshair" class="fps-crosshair" data-style="cross" style="display:none">
+      <div class="ch-h"></div>
+      <div class="ch-v"></div>
+      <div class="ch-dot"></div>
+      <div class="ch-circle"></div>
+      <div class="ch-t"></div>
+      <div class="ch-b"></div>
+      <div class="ch-l"></div>
+      <div class="ch-r"></div>
     </div>
     <div id="game-end-overlay" class="game-end-overlay">
       <span class="game-end-text">TIME'S UP</span>
@@ -267,6 +272,16 @@
             <div class="slider-ctrl">
               <input type="range" id="pause-fps-sensitivity" min="5" max="300" value="30" step="1">
               <span id="pause-fps-sens-val" class="slider-val slider-val-editable">0.30</span>
+            </div>
+          </div>
+          <div class="setting-row pause-fps-sens" style="display:none">
+            <label>크로스헤어</label>
+            <div class="crosshair-options">
+              <button class="btn-crosshair" data-ch="cross" title="십자"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span></div></button>
+              <button class="btn-crosshair" data-ch="dot" title="도트"><div class="ch-preview"><span style="width:6px;height:6px;top:7px;left:7px;border-radius:50%"></span></div></button>
+              <button class="btn-crosshair" data-ch="circle" title="원형"><div class="ch-preview"><span style="width:14px;height:14px;top:3px;left:3px;border-radius:50%;background:transparent;border:2px solid #49d9b2"></span><span style="width:3px;height:3px;top:8.5px;left:8.5px;border-radius:50%"></span></div></button>
+              <button class="btn-crosshair" data-ch="crossdot" title="십자+도트"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span><span style="width:4px;height:4px;top:8px;left:8px;border-radius:50%"></span></div></button>
+              <button class="btn-crosshair" data-ch="gap" title="갭 십자"><div class="ch-preview"><span style="width:5px;height:2px;top:9px;left:1px"></span><span style="width:5px;height:2px;top:9px;left:14px"></span><span style="width:2px;height:5px;top:1px;left:9px"></span><span style="width:2px;height:5px;top:14px;left:9px"></span></div></button>
             </div>
           </div>
         </div>
@@ -408,7 +423,17 @@
         </div>
       </div>
       <div class="settings-section">
-        <div class="settings-section-title">감도 설정 (FPS 뷰)</div>
+        <div class="settings-section-title">FPS 뷰</div>
+        <div class="setting-row">
+          <label>크로스헤어</label>
+          <div class="crosshair-options">
+            <button class="btn-crosshair active" data-ch="cross" title="십자"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span></div></button>
+            <button class="btn-crosshair" data-ch="dot" title="도트"><div class="ch-preview"><span style="width:6px;height:6px;top:7px;left:7px;border-radius:50%"></span></div></button>
+            <button class="btn-crosshair" data-ch="circle" title="원형"><div class="ch-preview"><span style="width:14px;height:14px;top:3px;left:3px;border-radius:50%;background:transparent;border:2px solid #49d9b2"></span><span style="width:3px;height:3px;top:8.5px;left:8.5px;border-radius:50%"></span></div></button>
+            <button class="btn-crosshair" data-ch="crossdot" title="십자+도트"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span><span style="width:4px;height:4px;top:8px;left:8px;border-radius:50%"></span></div></button>
+            <button class="btn-crosshair" data-ch="gap" title="갭 십자"><div class="ch-preview"><span style="width:5px;height:2px;top:9px;left:1px"></span><span style="width:5px;height:2px;top:9px;left:14px"></span><span style="width:2px;height:5px;top:1px;left:9px"></span><span style="width:2px;height:5px;top:14px;left:9px"></span></div></button>
+          </div>
+        </div>
         <div class="setting-row">
           <label>감도 기준</label>
           <div class="sens-game-btns">
