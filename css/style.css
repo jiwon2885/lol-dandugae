@@ -1102,18 +1102,17 @@ body {
   cursor: crosshair;
   overflow: hidden;
 }
-#screen-game.fps-no-cursor,
-#screen-game.fps-no-cursor * {
+html.fps-no-cursor,
+html.fps-no-cursor body,
+html.fps-no-cursor * {
   cursor: none !important;
 }
-#screen-game.fps-no-cursor #pause-overlay,
-#screen-game.fps-no-cursor #pause-overlay * {
+html.fps-no-cursor #pause-overlay,
+html.fps-no-cursor #pause-overlay * {
   cursor: default !important;
 }
-#screen-game.fps-no-cursor #pause-overlay button {
-  cursor: pointer !important;
-}
-#screen-game.fps-no-cursor #pause-overlay input {
+html.fps-no-cursor #pause-overlay button,
+html.fps-no-cursor #pause-overlay input {
   cursor: pointer !important;
 }
 

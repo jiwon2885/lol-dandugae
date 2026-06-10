@@ -619,9 +619,9 @@
 
     // Hide cursor for FPS mode (including during countdown)
     if (isFps) {
-      screens.game.classList.add('fps-no-cursor');
+      document.documentElement.classList.add('fps-no-cursor');
     } else {
-      screens.game.classList.remove('fps-no-cursor');
+      document.documentElement.classList.remove('fps-no-cursor');
     }
 
     if (!isFps) {
@@ -782,7 +782,7 @@
       document.getElementById('fps-container').style.display = 'none';
       document.getElementById('fps-crosshair').style.display = 'none';
       // Restore cursor after FPS mode
-      screens.game.classList.remove('fps-no-cursor');
+      document.documentElement.classList.remove('fps-no-cursor');
       showScreen('result');
     }, 1400);
 
