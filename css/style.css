@@ -1046,6 +1046,40 @@ body {
   100% { transform: scale(1); opacity: 1; filter: blur(0); }
 }
 
+/* ===== Game End Overlay ===== */
+.game-end-overlay {
+  position: absolute; inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 18;
+  pointer-events: none;
+  opacity: 0;
+}
+.game-end-overlay.active {
+  display: flex;
+  animation: gameEndFade 1.2s ease-out forwards;
+}
+.game-end-text {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  color: var(--gold);
+  text-shadow: 0 0 60px rgba(200,169,110,0.5), 0 0 120px rgba(200,169,110,0.2);
+  letter-spacing: 8px;
+  opacity: 0;
+  transform: scale(1.5);
+  animation: gameEndText 0.8s 0.3s ease-out forwards;
+}
+@keyframes gameEndFade {
+  0% { background: transparent; }
+  100% { background: rgba(8,11,18,0.75); opacity: 1; }
+}
+@keyframes gameEndText {
+  0% { opacity: 0; transform: scale(1.5); filter: blur(6px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
 /* ===== Pause Overlay ===== */
 #pause-overlay {
   position: absolute; inset: 0;
@@ -1139,6 +1173,34 @@ body {
 @keyframes resultAppear {
   from { opacity: 0; transform: translateY(20px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Result sequential reveal animations */
+.result-card .grade-row { opacity: 0; }
+.result-card .result-stats { opacity: 0; }
+.result-card .result-personal-best { opacity: 0; }
+.result-card .history-section { opacity: 0; }
+.result-card .result-actions { opacity: 0; }
+
+.result-card.reveal .grade-row {
+  animation: resultSlideUp 0.5s 0.1s ease-out forwards;
+}
+.result-card.reveal .result-stats {
+  animation: resultSlideUp 0.4s 0.5s ease-out forwards;
+}
+.result-card.reveal .result-personal-best {
+  animation: resultSlideUp 0.3s 0.7s ease-out forwards;
+}
+.result-card.reveal .history-section {
+  animation: resultSlideUp 0.4s 0.85s ease-out forwards;
+}
+.result-card.reveal .result-actions {
+  animation: resultSlideUp 0.3s 1.0s ease-out forwards;
+}
+
+@keyframes resultSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .result-title {

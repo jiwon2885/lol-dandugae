@@ -538,17 +538,37 @@
     }
   }
 
+  // Count-up animation helper
+  function animateCountUp(el, target, suffix, duration) {
+    const start = performance.now();
+    const from = 0;
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const val = Math.round(from + (target - from) * eased);
+      el.textContent = val + suffix;
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
   // ========== RESULT ==========
   function showResult(stats) {
     AudioManager.stopBGM();
-    // destroy cleans up without calling onEnd again
-    if (gameEngine) {
-      gameEngine.destroy();
-      gameEngine = null;
-    }
 
-    // Small delay to ensure screen transition is clean
-    setTimeout(() => showScreen('result'), 50);
+    // Game end overlay animation
+    const endOverlay = document.getElementById('game-end-overlay');
+    endOverlay.classList.add('active');
+
+    // Wait for end animation, then transition to result
+    setTimeout(() => {
+      endOverlay.classList.remove('active');
+      if (gameEngine) {
+        gameEngine.destroy();
+        gameEngine = null;
+      }
+      showScreen('result');
+    }, 1400);
 
     const grade = calcGrade(stats);
     const effectiveAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
@@ -597,20 +617,40 @@
       reactionMs: stats.avgReaction,
     });
 
-    // Render result
-    el.resultGrade.textContent = grade;
-    el.resultGrade.className = 'grade grade-' + grade.toLowerCase().replace('+', 'plus');
-    el.resultScore.textContent = totalScore + 'pt';
-
-    el.resultBestBadge.style.display = isBest && stats.kills > 0 ? 'inline-block' : 'none';
-
-    el.resKills.textContent = stats.kills;
     // Tracking mode: show tracking accuracy instead of click accuracy
     const displayAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
       ? stats.trackAccuracy : stats.accuracy;
-    el.resAccuracy.textContent = displayAccuracy + '%';
-    el.resCombo.textContent = stats.maxCombo;
-    el.resKpm.textContent = stats.kpm;
+
+    // Render result with count-up animation
+    const resultCard = document.querySelector('.result-card');
+    resultCard.classList.remove('reveal');
+
+    el.resultGrade.textContent = grade;
+    el.resultGrade.className = 'grade grade-' + grade.toLowerCase().replace('+', 'plus');
+    el.resultScore.textContent = '0pt';
+    el.resultBestBadge.style.display = 'none';
+    el.resKills.textContent = '0';
+    el.resAccuracy.textContent = '0%';
+    el.resCombo.textContent = '0';
+    el.resKpm.textContent = '0';
+
+    // Trigger reveal animation
+    requestAnimationFrame(() => {
+      resultCard.classList.add('reveal');
+      // Count-up score
+      animateCountUp(el.resultScore, totalScore, 'pt', 600);
+      // Count-up stats (staggered)
+      setTimeout(() => {
+        animateCountUp(el.resKills, stats.kills, '', 400);
+        animateCountUp(el.resAccuracy, displayAccuracy, '%', 400);
+        animateCountUp(el.resCombo, stats.maxCombo, '', 400);
+        animateCountUp(el.resKpm, stats.kpm, '', 400);
+      }, 500);
+      // Show best badge after count-up
+      setTimeout(() => {
+        el.resultBestBadge.style.display = isBest && stats.kills > 0 ? 'inline-block' : 'none';
+      }, 800);
+    });
 
     // Update stat labels for tracking mode
     const statLabels = document.querySelectorAll('.stat-label');
@@ -647,8 +687,8 @@
       }
     }
 
-    // Render history chart (delay for screen transition)
-    setTimeout(() => renderResultHistory(currentMode, totalScore), 120);
+    // Render history chart (delay for end overlay + screen transition + reveal anim)
+    setTimeout(() => renderResultHistory(currentMode, totalScore), 1600);
   }
 
   // Mode-specific grade thresholds (balanced to similar difficulty)
@@ -1034,6 +1074,7 @@
     gamePaused = false;
     if (activeCountdownInterval) { clearInterval(activeCountdownInterval); activeCountdownInterval = null; }
     el.countdownOverlay.classList.remove('active');
+    document.getElementById('game-end-overlay').classList.remove('active');
     if (gameEngine) {
       gameEngine.destroy();
       gameEngine = null;
