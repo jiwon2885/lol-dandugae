@@ -117,14 +117,14 @@
       target.classList.add('active');
     } else if (!_screenTransitioning) {
       _screenTransitioning = true;
+      // Cross-fade: new screen fades in on top while old fades out
       currentActive.classList.add('screen-exit');
       currentActive.classList.remove('active');
+      target.classList.add('active');
       setTimeout(() => {
         currentActive.classList.remove('screen-exit');
-        Object.values(screens).forEach(s => { s.classList.remove('active', 'screen-exit'); });
-        target.classList.add('active');
         _screenTransitioning = false;
-      }, 200);
+      }, 300);
     } else {
       // Fallback if already transitioning
       Object.values(screens).forEach(s => { s.classList.remove('active', 'screen-exit'); });
@@ -1529,6 +1529,7 @@
     gameEngine.pause();
 
     el.pauseDesc.textContent = reason || '';
+    el.pauseDesc.style.display = reason ? '' : 'none';
 
     if (pauseCount >= MAX_PAUSES) {
       el.btnResume.style.display = 'none';

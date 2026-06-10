@@ -135,7 +135,8 @@ body {
 }
 .screen.screen-exit {
   display: flex;
-  animation: screenFadeOut 0.25s ease-in forwards;
+  z-index: 0;
+  animation: screenFadeOut 0.3s ease-in forwards;
 }
 @keyframes screenFadeIn {
   from { opacity: 0; }
@@ -363,18 +364,20 @@ body {
   width: 240px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.5s ease-out;
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(24px);
-  animation: modeCardIn 0.5s ease-out forwards;
+  animation: modeCardIn 0.5s ease-out both;
 }
 .mode-card:nth-child(2) { animation-delay: 0.08s; }
 .mode-card:nth-child(3) { animation-delay: 0.16s; }
 @keyframes modeCardIn {
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .mode-card::before {
@@ -386,7 +389,7 @@ body {
   z-index: 2;
 }
 .mode-card:hover {
-  transform: translateY(-8px) scale(1.02) !important;
+  transform: translateY(-8px) scale(1.02);
   border-color: var(--gold);
   box-shadow: var(--shadow-heavy), 0 0 40px var(--gold-glow);
 }
@@ -395,7 +398,7 @@ body {
   transform: scale(1.05);
 }
 .mode-card:active {
-  transform: translateY(-2px) scale(0.98) !important;
+  transform: translateY(-2px) scale(0.98);
   transition-duration: 0.1s;
 }
 
@@ -1137,14 +1140,15 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(8, 11, 18, 0.8);
-  backdrop-filter: blur(10px);
+  backdrop-filter: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.25s ease, visibility 0.25s ease, backdrop-filter 0.25s ease;
 }
 .settings-overlay.active {
   opacity: 1;
   visibility: visible;
+  backdrop-filter: blur(10px);
 }
 
 .settings-modal {
@@ -1313,7 +1317,7 @@ body {
 .lobby-sens-card {
   padding: 18px 20px;
 }
-.lobby-sens-title {
+.lobby-card h3.lobby-sens-title {
   font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 800;
@@ -1487,7 +1491,7 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
   align-items: center;
   justify-content: center;
   background: rgba(8,11,18,0.8);
-  backdrop-filter: blur(4px);
+  backdrop-filter: none;
   z-index: 20;
   opacity: 0;
   visibility: hidden;
@@ -1496,6 +1500,7 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 #countdown-overlay.active {
   opacity: 1;
   visibility: visible;
+  backdrop-filter: blur(4px);
 }
 
 #countdown-num {
@@ -1582,16 +1587,17 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
   align-items: center;
   justify-content: center;
   background: rgba(8, 11, 18, 0.88);
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
   z-index: 25;
   cursor: default;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.25s ease, visibility 0.25s ease, backdrop-filter 0.25s ease;
 }
 #pause-overlay.active {
   opacity: 1;
   visibility: visible;
+  backdrop-filter: blur(8px);
 }
 
 .pause-box {
