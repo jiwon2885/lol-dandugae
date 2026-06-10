@@ -257,7 +257,8 @@ class GameEngine {
     const padding = this.targetSize;
     const hudHeight = 70;
     let x, y, tooClose;
-    // Avoid overlapping targets
+    let attempts = 0;
+    // Avoid overlapping targets (max 50 attempts to prevent infinite loop)
     do {
       tooClose = false;
       x = padding + Math.random() * (this.W - padding * 2);
@@ -267,7 +268,7 @@ class GameEngine {
         const dist = Math.hypot(x - this.targets[i].x, y - this.targets[i].y);
         if (dist < this.targetSize * 2) { tooClose = true; break; }
       }
-    } while (tooClose);
+    } while (tooClose && ++attempts < 50);
     const faceImg = this.faceImages.length
       ? this.faceImages[Math.floor(Math.random() * this.faceImages.length)]
       : null;

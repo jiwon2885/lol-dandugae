@@ -49,6 +49,7 @@ class FPSGameEngine {
     this._particleGeo = new THREE.SphereGeometry(0.04, 4, 4);
     this._ringGeo = new THREE.RingGeometry(0.55, 0.65, 32);
     this._hitEffects = [];
+    this._particlePool = []; // reusable particle pool
     this._euler = new THREE.Euler(0, 0, 0, 'YXZ');
     this._statsObj = {
       kills: 0, misses: 0, combo: 0, maxCombo: 0, bonusPoints: 0,
@@ -348,9 +349,19 @@ class FPSGameEngine {
 
   _spawnHitEffect(pos) {
     for (let i = 0; i < 10; i++) {
-      const mat = new THREE.MeshBasicMaterial({ color: 0xe84057, transparent: true, opacity: 1 });
-      const p = new THREE.Mesh(this._particleGeo, mat);
-      p.position.copy(pos);
+      let p;
+      // Reuse pooled particles to reduce GC pressure
+      if (this._particlePool && this._particlePool.length > 0) {
+        p = this._particlePool.pop();
+        p.position.copy(pos);
+        p.material.opacity = 1;
+        p.visible = true;
+      } else {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xe84057, transparent: true, opacity: 1 });
+        p = new THREE.Mesh(this._particleGeo, mat);
+        p.position.copy(pos);
+        this._scene.add(p);
+      }
       const angle = Math.random() * Math.PI * 2;
       const elev = (Math.random() - 0.5) * Math.PI;
       const speed = 3 + Math.random() * 4;
@@ -360,7 +371,6 @@ class FPSGameEngine {
         Math.sin(angle) * Math.cos(elev) * speed,
       );
       p.userData.life = 1;
-      this._scene.add(p);
       this._hitEffects.push(p);
     }
   }
@@ -400,7 +410,7 @@ class FPSGameEngine {
     this._camera.quaternion.identity();
 
     while (this._targets.length > 0) this._removeTarget(this._targets[0]);
-    for (const p of this._hitEffects) { this._scene.remove(p); p.material.dispose(); }
+    for (const p of this._hitEffects) { p.visible = false; this._particlePool.push(p); }
     this._hitEffects = [];
 
     for (let i = 0; i < this._targetCount; i++) this._spawnTarget();
@@ -443,6 +453,8 @@ class FPSGameEngine {
     window.removeEventListener('resize', this._boundResize);
     while (this._targets.length > 0) this._removeTarget(this._targets[0]);
     for (const p of this._hitEffects) { this._scene.remove(p); p.material.dispose(); }
+    for (const p of this._particlePool) { this._scene.remove(p); p.material.dispose(); }
+    this._particlePool = [];
     this._targetGeo.dispose();
     this._particleGeo.dispose();
     this._ringGeo.dispose();
@@ -498,7 +510,8 @@ class FPSGameEngine {
       p.userData.life -= dtSec * 2.5;
       p.material.opacity = Math.max(0, p.userData.life);
       if (p.userData.life <= 0) {
-        this._scene.remove(p); p.material.dispose();
+        p.visible = false;
+        this._particlePool.push(p);
         return false;
       }
       return true;

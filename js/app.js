@@ -274,7 +274,7 @@
     if (infoVals[0]) infoVals[0].textContent = dur + '초';
     const tSize = TARGET_SIZES[currentMode] || 100;
     if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
-    if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
+    if (infoVals[1]) infoVals[1].textContent = tSize <= 80 ? '작음' : tSize <= 110 ? '보통' : '큼';
     // Show/hide lobby sensitivity cards
     const lobbyNormalSensCard = document.getElementById('lobby-normal-sens-card');
     if (lobbyNormalSensCard) lobbyNormalSensCard.style.display = fpsView ? 'none' : '';
@@ -949,8 +949,9 @@
     const effectiveAccuracy = (currentMode === 'tracking' && stats.trackAccuracy != null)
       ? stats.trackAccuracy : stats.accuracy;
 
-    // Update profile
-    const isBest = stats.kills > (currentProfile.bestScore || 0);
+    // Check if new best for this specific mode (before saving to history)
+    const prevHistory = getHistory(getEffectiveMode());
+    const prevBestScore = prevHistory.length > 0 ? Math.max(...prevHistory.map(h => h.score)) : 0;
     Storage.updateProfile(currentNickname, {
       totalPlays: (currentProfile.totalPlays || 0) + 1,
       bestScore: Math.max(currentProfile.bestScore || 0, stats.kills),
@@ -1040,7 +1041,8 @@
       }, 500);
       // Show best badge after count-up
       setTimeout(() => {
-        el.resultBestBadge.style.display = isBest && stats.kills > 0 ? 'inline-block' : 'none';
+        const isBest = totalScore > prevBestScore && stats.kills > 0;
+        el.resultBestBadge.style.display = isBest ? 'inline-block' : 'none';
       }, 800);
     });
 
@@ -1498,9 +1500,9 @@
   });
 
   function pauseGame(reason) {
-    if (!gameEngine || gamePaused) return;
-    pauseCount++;
+    if (!gameEngine || gamePaused || !gameEngine.running) return;
     gamePaused = true;
+    pauseCount++;
     gameEngine.pause();
 
     el.pauseDesc.textContent = reason || '';
@@ -1760,7 +1762,7 @@
         if (p.x > w + 10) p.x = -10;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = colorParts[0] + a.toFixed(2) + colorParts[1];
+        ctx.fillStyle = colorParts[0] + ((a * 100 | 0) / 100) + colorParts[1];
         ctx.fill();
       }
     }

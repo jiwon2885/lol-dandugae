@@ -1735,9 +1735,10 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
 .lobby-history-card {
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 14px 18px 10px;
   backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
 }
@@ -2033,16 +2034,26 @@ html.fps-no-cursor #pause-overlay input[type="range"] {
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--text-dim);
-  padding: 12px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid rgba(200,169,110,0.08);
   text-align: left;
   font-weight: 700;
+  white-space: nowrap;
+}
+#ranking-table thead th:first-child {
+  text-align: center;
+  width: 40px;
 }
 #ranking-table tbody td {
-  padding: 12px 10px;
-  font-size: 0.85rem;
+  padding: 10px 12px;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
+}
+#ranking-table tbody td:first-child {
+  text-align: center;
+  color: var(--text-dim);
+  font-weight: 700;
 }
 #ranking-table tbody tr {
   transition: background 0.15s;
