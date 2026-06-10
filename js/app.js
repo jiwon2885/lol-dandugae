@@ -222,7 +222,7 @@
   document.querySelectorAll('.mode-card').forEach(card => {
     card.addEventListener('click', () => {
       currentMode = card.dataset.mode;
-      selectedFaces.clear();
+      if (!loadSelectedFaces()) selectedFaces.clear();
       domBuilt = false;
       enterLobby();
     });
@@ -341,7 +341,6 @@
     } else {
       const maxFaces = MODE_MAX_FACES[currentMode] || Infinity;
       if (selectedFaces.size >= maxFaces) {
-        // Replace: deselect the first selected, then select new
         if (maxFaces === 1) {
           selectedFaces.clear();
         } else {
@@ -352,6 +351,23 @@
       selectedFaces.add(idx);
       renderFacePreviews(idx);
     }
+    saveSelectedFaces();
+  }
+
+  function saveSelectedFaces() {
+    localStorage.setItem('selected_faces', JSON.stringify([...selectedFaces]));
+  }
+
+  function loadSelectedFaces() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('selected_faces'));
+      if (Array.isArray(saved) && saved.length > 0) {
+        selectedFaces.clear();
+        saved.forEach(idx => { if (typeof idx === 'number') selectedFaces.add(idx); });
+        return true;
+      }
+    } catch {}
+    return false;
   }
 
   function updateFaceCount() {
@@ -381,10 +397,12 @@
   document.getElementById('btn-select-all').addEventListener('click', () => {
     faceImages.forEach((img, idx) => { if (img) selectedFaces.add(idx); });
     renderFacePreviews(-1);
+    saveSelectedFaces();
   });
   document.getElementById('btn-deselect-all').addEventListener('click', () => {
     selectedFaces.clear();
     renderFacePreviews(-1);
+    saveSelectedFaces();
   });
 
   // ========== SETTINGS MODAL ==========
