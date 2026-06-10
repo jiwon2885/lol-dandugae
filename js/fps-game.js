@@ -47,8 +47,14 @@ class FPSGameEngine {
     this._targets = [];
     this._targetGeo = new THREE.SphereGeometry(0.5, 24, 24);
     this._particleGeo = new THREE.SphereGeometry(0.04, 4, 4);
+    this._ringGeo = new THREE.RingGeometry(0.55, 0.65, 32);
     this._hitEffects = [];
     this._euler = new THREE.Euler(0, 0, 0, 'YXZ');
+    this._statsObj = {
+      kills: 0, misses: 0, combo: 0, maxCombo: 0, bonusPoints: 0,
+      avgReaction: 0, accuracy: 0, timeLeft: 0, duration: 0, kpm: 0,
+      clickLog: null, mousePath: [], trackTime: 0, trackAccuracy: 0, mode: '',
+    };
     this._isTriple = this.mode.includes('triple');
     this._isTracking = this.mode.includes('tracking');
     this._targetCount = this._isTriple ? 3 : 1;
@@ -237,12 +243,11 @@ class FPSGameEngine {
     sphere.position.set(x, y, z);
     this._scene.add(sphere);
 
-    // Glow ring
-    const ringGeo = new THREE.RingGeometry(0.55, 0.65, 32);
+    // Glow ring (shared geometry)
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xff3333, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
     });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
+    const ring = new THREE.Mesh(this._ringGeo, ringMat);
     sphere.add(ring);
     sphere.userData.ring = ring;
 
@@ -272,7 +277,7 @@ class FPSGameEngine {
 
   _removeTarget(target) {
     const ring = target.mesh.userData.ring;
-    if (ring) { ring.material.dispose(); ring.geometry.dispose(); }
+    if (ring) { ring.material.dispose(); }
     this._scene.remove(target.mesh);
     target.mat.dispose();
     const idx = this._targets.indexOf(target);
@@ -361,19 +366,23 @@ class FPSGameEngine {
   }
 
   _getStats() {
+    const s = this._statsObj;
     const total = this.kills + this.misses;
-    const accuracy = total > 0 ? Math.round((this.kills / total) * 100) : 0;
+    s.kills = this.kills;
+    s.misses = this.misses;
+    s.combo = this.combo;
+    s.maxCombo = this.maxCombo;
+    s.bonusPoints = this.bonusPoints;
+    s.avgReaction = this.reactionTimes.length
+      ? Math.round(this.reactionTimes.reduce((a, b) => a + b, 0) / this.reactionTimes.length) : 0;
+    s.accuracy = total > 0 ? Math.round((this.kills / total) * 100) : 0;
+    s.timeLeft = this.timeLeft;
+    s.duration = this.duration;
     const elapsed = this.duration - this.timeLeft;
-    return {
-      kills: this.kills, misses: this.misses, combo: this.combo,
-      maxCombo: this.maxCombo, bonusPoints: this.bonusPoints,
-      avgReaction: this.reactionTimes.length
-        ? Math.round(this.reactionTimes.reduce((a, b) => a + b, 0) / this.reactionTimes.length) : 0,
-      accuracy, timeLeft: this.timeLeft, duration: this.duration,
-      kpm: elapsed > 0 ? Math.round((this.kills / elapsed) * 60) : 0,
-      clickLog: this._clickLog, mousePath: [],
-      trackTime: 0, trackAccuracy: 0, mode: this.mode,
-    };
+    s.kpm = elapsed > 0 ? Math.round((this.kills / elapsed) * 60) : 0;
+    s.clickLog = this._clickLog;
+    s.mode = this.mode;
+    return s;
   }
 
   requestPointerLock() {
@@ -436,6 +445,7 @@ class FPSGameEngine {
     for (const p of this._hitEffects) { this._scene.remove(p); p.material.dispose(); }
     this._targetGeo.dispose();
     this._particleGeo.dispose();
+    this._ringGeo.dispose();
     this._faceTextures.forEach(t => t.dispose());
     this._renderer.dispose();
     if (this._renderer.domElement.parentNode) {

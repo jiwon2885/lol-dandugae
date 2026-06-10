@@ -406,7 +406,9 @@
     await supabase.auth.signOut();
     currentUserId = null;
     currentNickname = '';
+    authResolved = false;
     showScreen('login');
+    showLoginButton();
   });
 
   // ========== SETTINGS MODAL ==========
@@ -1008,8 +1010,9 @@
     el.resCombo.textContent = '0';
     el.resKpm.textContent = '0';
 
-    // Tracking mode: compute trackTime in seconds
-    const trackTimeSec = currentMode === 'tracking' ? Math.round((stats.trackTime || 0) / 1000) : 0;
+    // Tracking mode: compute trackTime in seconds (only 2D tracking, not FPS)
+    const isTrackingStats = currentMode === 'tracking' && !fpsView;
+    const trackTimeSec = isTrackingStats ? Math.round((stats.trackTime || 0) / 1000) : 0;
 
     // Trigger reveal animation + grade particles
     requestAnimationFrame(() => {
@@ -1021,7 +1024,7 @@
       setTimeout(() => {
         animateCountUp(el.resKills, stats.kills, '', 400);
         animateCountUp(el.resAccuracy, displayAccuracy, '%', 400);
-        if (currentMode === 'tracking') {
+        if (isTrackingStats) {
           animateCountUp(el.resCombo, trackTimeSec, '초', 400);
         } else {
           animateCountUp(el.resCombo, stats.maxCombo, '', 400);
@@ -1034,9 +1037,9 @@
       }, 800);
     });
 
-    // Update stat labels for tracking mode
+    // Update stat labels for tracking mode (only 2D tracking, not FPS tracking)
     const statLabels = document.querySelectorAll('.stat-label');
-    if (currentMode === 'tracking') {
+    if (isTrackingStats) {
       if (statLabels[0]) statLabels[0].textContent = '\ucc98\uce58 \uc218';
       if (statLabels[1]) statLabels[1].textContent = '\ud2b8\ub798\ud0b9 \uc815\ud655\ub3c4';
       if (statLabels[2]) statLabels[2].textContent = '\ud2b8\ub798\ud0b9 \uc2dc\uac04';
@@ -1187,11 +1190,13 @@
     ctx.stroke();
 
     // Data points
+    const bestIdx = scores.indexOf(maxS);
+    const sparse = scores.length > 8; // sparse labels when many points
     for (let i = 0; i < scores.length; i++) {
       const x = getX(i);
       const y = getY(scores[i]);
       const isLast = highlightLast && i === scores.length - 1;
-      const isBest = scores[i] === maxS;
+      const isBest = i === bestIdx;
 
       ctx.beginPath();
       ctx.arc(x, y, isLast ? 5 : isBest ? 4 : 2.5, 0, Math.PI * 2);
@@ -1210,11 +1215,14 @@
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Score label below every point
-      ctx.font = isLast ? '700 11px Inter, sans-serif' : '600 10px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = isLast ? '#f0d48a' : isBest ? '#c8a96e' : 'rgba(200,169,110,0.6)';
-      ctx.fillText(scores[i], x, y + (isLast ? 16 : isBest ? 15 : 14));
+      // Score label: show all if ≤8 points, otherwise only first/last/best
+      const showLabel = !sparse || i === 0 || isLast || isBest;
+      if (showLabel) {
+        ctx.font = isLast ? '700 11px Inter, sans-serif' : '600 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = isLast ? '#f0d48a' : isBest ? '#c8a96e' : 'rgba(200,169,110,0.6)';
+        ctx.fillText(scores[i], x, y + (isLast ? 16 : isBest ? 15 : 14));
+      }
     }
   }
 
@@ -1333,6 +1341,18 @@
 
   el.btnRetry.addEventListener('click', () => startGame());
   el.btnToLobby.addEventListener('click', () => enterLobby());
+
+  // Keyboard shortcuts on result screen
+  document.addEventListener('keydown', (e) => {
+    if (!screens.result.classList.contains('active')) return;
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      startGame();
+    } else if (e.code === 'Escape') {
+      e.preventDefault();
+      enterLobby();
+    }
+  });
 
   // ========== RANKING ==========
   const podiumEl = document.getElementById('podium');
