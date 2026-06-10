@@ -233,6 +233,7 @@
     if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
 
     renderFacePreviews();
+    renderLobbyHistory(currentMode);
   }
 
   let faceWraps = {}; // persistent DOM references by index
@@ -620,6 +621,34 @@
       if (statLabels[1]) statLabels[1].textContent = '\uc815\ud655\ub3c4';
       if (statLabels[3]) statLabels[3].textContent = '\ubd84\ub2f9 \uaca9\ud30c';
     }
+
+    // Save to history & render chart
+    saveToHistory(currentMode, {
+      score: totalScore,
+      kills: stats.kills,
+      accuracy: displayAccuracy,
+      maxCombo: stats.maxCombo,
+      kpm: stats.kpm,
+      grade,
+      ts: Date.now(),
+    });
+
+    // Show personal best
+    const history = getHistory(currentMode);
+    const allScores = history.map(h => h.score);
+    const personalBest = Math.max(...allScores);
+    const bestEl = document.getElementById('result-personal-best');
+    if (bestEl) {
+      bestEl.textContent = '\uc790\uae30 \ucd5c\uace0: ' + personalBest + 'pt';
+      if (totalScore >= personalBest) {
+        bestEl.style.color = '#f0d48a';
+      } else {
+        bestEl.style.color = '';
+      }
+    }
+
+    // Render history chart (delay for screen transition)
+    setTimeout(() => renderResultHistory(currentMode, totalScore), 120);
   }
 
   // Mode-specific grade thresholds (balanced to similar difficulty)
@@ -649,6 +678,213 @@
   const gradeOrder = ['C', 'B', 'A', 'S', 'S+'];
   function betterGrade(a, b) {
     return gradeOrder.indexOf(a) >= gradeOrder.indexOf(b) ? a : b;
+  }
+
+  // ========== GAME HISTORY (localStorage) ==========
+  const HISTORY_KEY = 'guillotine_history';
+  const MAX_HISTORY = 20;
+
+  function getHistory(mode) {
+    try {
+      const all = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
+      return all[mode] || [];
+    } catch { return []; }
+  }
+
+  function saveToHistory(mode, entry) {
+    try {
+      const all = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
+      if (!all[mode]) all[mode] = [];
+      all[mode].push(entry);
+      if (all[mode].length > MAX_HISTORY) all[mode] = all[mode].slice(-MAX_HISTORY);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(all));
+    } catch {}
+  }
+
+  function drawHistoryChart(canvasId, data, highlightLast) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || data.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const scores = data.map(d => d.score);
+    const maxS = Math.max(...scores);
+    const minS = Math.min(...scores);
+    const range = maxS - minS || 1;
+    const padT = 12, padB = 6, padL = 4, padR = 4;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    function getX(i) { return padL + (i / (scores.length - 1)) * plotW; }
+    function getY(v) { return padT + plotH - ((v - minS) / range) * plotH; }
+
+    // Average line
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const avgY = getY(avg);
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padL, avgY);
+    ctx.lineTo(w - padR, avgY);
+    ctx.strokeStyle = 'rgba(200,169,110,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(getX(0), getY(scores[0]));
+    for (let i = 1; i < scores.length; i++) {
+      const cx = (getX(i - 1) + getX(i)) / 2;
+      ctx.bezierCurveTo(cx, getY(scores[i - 1]), cx, getY(scores[i]), getX(i), getY(scores[i]));
+    }
+    ctx.lineTo(getX(scores.length - 1), h);
+    ctx.lineTo(getX(0), h);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(200,169,110,0.15)');
+    grad.addColorStop(1, 'rgba(200,169,110,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(getX(0), getY(scores[0]));
+    for (let i = 1; i < scores.length; i++) {
+      const cx = (getX(i - 1) + getX(i)) / 2;
+      ctx.bezierCurveTo(cx, getY(scores[i - 1]), cx, getY(scores[i]), getX(i), getY(scores[i]));
+    }
+    ctx.strokeStyle = 'rgba(200,169,110,0.7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Data points
+    for (let i = 0; i < scores.length; i++) {
+      const x = getX(i);
+      const y = getY(scores[i]);
+      const isLast = highlightLast && i === scores.length - 1;
+      const isBest = scores[i] === maxS;
+
+      ctx.beginPath();
+      ctx.arc(x, y, isLast ? 5 : isBest ? 4 : 2.5, 0, Math.PI * 2);
+      if (isLast) {
+        ctx.fillStyle = '#f0d48a';
+        ctx.shadowColor = 'rgba(240,212,138,0.6)';
+        ctx.shadowBlur = 10;
+      } else if (isBest) {
+        ctx.fillStyle = '#c8a96e';
+        ctx.shadowColor = 'rgba(200,169,110,0.4)';
+        ctx.shadowBlur = 6;
+      } else {
+        ctx.fillStyle = 'rgba(200,169,110,0.5)';
+        ctx.shadowBlur = 0;
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Score label on last point
+      if (isLast) {
+        ctx.font = '700 11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f0d48a';
+        ctx.fillText(scores[i] + 'pt', x, y - 10);
+      }
+    }
+  }
+
+  function renderResultHistory(mode, currentScore) {
+    const history = getHistory(mode);
+    const section = document.getElementById('history-section');
+    if (history.length < 2) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+
+    // Draw chart
+    drawHistoryChart('history-chart', history, true);
+
+    // Stats
+    const scores = history.map(d => d.score);
+    const best = Math.max(...scores);
+    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    document.getElementById('history-best').textContent = '\ucd5c\uace0 ' + best + 'pt';
+    document.getElementById('history-avg').textContent = '\ud3c9\uade0 ' + avg + 'pt';
+
+    // Trend (compare last 3 vs previous 3)
+    const trendEl = document.getElementById('history-trend');
+    if (scores.length >= 4) {
+      const recent = scores.slice(-3);
+      const older = scores.slice(-6, -3);
+      if (older.length > 0) {
+        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+        const diff = Math.round(recentAvg - olderAvg);
+        if (diff > 0) {
+          trendEl.textContent = '\u25b2 ' + diff + 'pt \uc0c1\uc2b9\uc138';
+          trendEl.className = 'history-trend up';
+        } else if (diff < 0) {
+          trendEl.textContent = '\u25bc ' + Math.abs(diff) + 'pt \ud558\ub77d\uc138';
+          trendEl.className = 'history-trend down';
+        } else {
+          trendEl.textContent = '- \uc720\uc9c0';
+          trendEl.className = 'history-trend flat';
+        }
+      } else {
+        trendEl.textContent = '';
+      }
+    } else {
+      trendEl.textContent = '';
+    }
+  }
+
+  function renderLobbyHistory(mode) {
+    const history = getHistory(mode);
+    const card = document.getElementById('lobby-history');
+    if (history.length < 2) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+    document.getElementById('lobby-history-count').textContent = '\ucd5c\uadfc ' + history.length + '\ud310';
+
+    drawHistoryChart('lobby-history-chart', history, false);
+
+    const scores = history.map(d => d.score);
+    const best = Math.max(...scores);
+    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    document.getElementById('lobby-hist-best').textContent = '\ucd5c\uace0 ' + best + 'pt';
+    document.getElementById('lobby-hist-avg').textContent = '\ud3c9\uade0 ' + avg + 'pt';
+
+    const trendEl = document.getElementById('lobby-hist-trend');
+    if (scores.length >= 4) {
+      const recent = scores.slice(-3);
+      const older = scores.slice(-6, -3);
+      if (older.length > 0) {
+        const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+        const diff = Math.round(recentAvg - olderAvg);
+        if (diff > 0) {
+          trendEl.textContent = '\u25b2 \uc0c1\uc2b9\uc138';
+          trendEl.style.color = '#49d9b2';
+        } else if (diff < 0) {
+          trendEl.textContent = '\u25bc \ud558\ub77d\uc138';
+          trendEl.style.color = '#e84057';
+        } else {
+          trendEl.textContent = '- \uc720\uc9c0';
+          trendEl.style.color = '';
+        }
+      } else {
+        trendEl.textContent = '';
+      }
+    } else {
+      trendEl.textContent = '';
+    }
   }
 
   el.btnRetry.addEventListener('click', () => startGame());

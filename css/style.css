@@ -1115,7 +1115,7 @@ body {
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-lg);
   padding: 44px 44px 36px;
-  width: 440px;
+  width: 480px;
   max-width: 92vw;
   text-align: center;
   backdrop-filter: blur(20px) saturate(1.2);
@@ -1239,6 +1239,107 @@ body {
   font-size: 1.5rem;
   color: var(--text);
 }
+
+/* Personal best in result */
+.result-personal-best {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* === Result History Chart === */
+.history-section {
+  margin: 16px 0 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(200,170,110,0.1);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px 10px;
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.history-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+.history-trend {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.history-trend.up { color: #49d9b2; }
+.history-trend.down { color: var(--red); }
+.history-trend.flat { color: var(--text-dim); }
+
+.history-chart {
+  width: 100%;
+  height: 100px;
+  display: block;
+  border-radius: 6px;
+}
+.history-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.history-label-best { color: var(--gold); }
+.history-label-avg { color: var(--text-dim); }
+
+/* === Lobby History Card === */
+.lobby-history-card {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px 10px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+.lobby-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.lobby-history-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.lobby-history-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.lobby-history-canvas {
+  width: 100%;
+  height: 70px;
+  display: block;
+  border-radius: 4px;
+}
+.lobby-history-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.lobby-history-stats span:nth-child(1) { color: var(--gold); }
+.lobby-history-stats span:nth-child(2) { color: var(--text-dim); }
+.lobby-history-stats span:nth-child(3) { font-weight: 800; }
 
 .result-actions {
   display: flex;
