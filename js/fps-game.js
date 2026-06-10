@@ -177,16 +177,14 @@ class FPSGameEngine {
       this._scene.add(new THREE.Line(g, edgeMat));
     }
 
-    // Wall definitions for target spawning: [axis, value, rangeA, rangeB, margin]
-    // Targets spawn ON walls (sphere center = wall + radius offset)
-    const m = 2; // margin from wall edges
-    this._walls = [
-      { axis: 'z', val: -hD + R, rA: [-hW + m, hW - m], rB: [-hH + m, hH - m], aKey: 'x', bKey: 'y' }, // back
-      { axis: 'x', val: -hW + R, rA: [-hH + m, hH - m], rB: [-hD + m, -3],      aKey: 'y', bKey: 'z' }, // left
-      { axis: 'x', val:  hW - R, rA: [-hH + m, hH - m], rB: [-hD + m, -3],      aKey: 'y', bKey: 'z' }, // right
-      { axis: 'y', val: -hH + R, rA: [-hW + m, hW - m], rB: [-hD + m, -3],      aKey: 'x', bKey: 'z' }, // floor
-      { axis: 'y', val:  hH - R, rA: [-hW + m, hW - m], rB: [-hD + m, -3],      aKey: 'x', bKey: 'z' }, // ceiling
-    ];
+    // Targets spawn ON the back wall only (the wall player faces)
+    // Generous margin from edges to prevent corner spawns
+    const m = 3; // margin from wall edges (no corners)
+    this._backWall = {
+      z: -hD + R,
+      xMin: -hW + m, xMax: hW - m,
+      yMin: -hH + m, yMax: hH - m,
+    };
 
     // Room bounds for tracking mode bouncing
     this._roomBounds = {
@@ -199,25 +197,22 @@ class FPSGameEngine {
   _spawnTarget() {
     let x, y, z;
     const minDist = 2.5; // minimum distance between targets
+    const bw = this._backWall;
 
     if (this._isTracking) {
-      // Tracking: spawn in open space (will move around)
-      const b = this._roomBounds;
-      for (let att = 0; att < 30; att++) {
-        x = b.minX + Math.random() * (b.maxX - b.minX);
-        y = b.minY + Math.random() * (b.maxY - b.minY);
-        z = b.minZ + Math.random() * (b.maxZ - b.minZ);
+      // Tracking: spawn on back wall, then moves around
+      for (let att = 0; att < 40; att++) {
+        x = bw.xMin + Math.random() * (bw.xMax - bw.xMin);
+        y = bw.yMin + Math.random() * (bw.yMax - bw.yMin);
+        z = bw.z;
         if (this._checkNoOverlap(x, y, z, minDist)) break;
       }
     } else {
-      // Grid/Triple: spawn ON a random wall
+      // Grid/Triple: spawn ON the back wall only
       for (let att = 0; att < 40; att++) {
-        const wall = this._walls[Math.floor(Math.random() * this._walls.length)];
-        const a = wall.rA[0] + Math.random() * (wall.rA[1] - wall.rA[0]);
-        const b = wall.rB[0] + Math.random() * (wall.rB[1] - wall.rB[0]);
-        x = wall.axis === 'x' ? wall.val : (wall.aKey === 'x' ? a : b);
-        y = wall.axis === 'y' ? wall.val : (wall.aKey === 'y' ? a : b);
-        z = wall.axis === 'z' ? wall.val : (wall.bKey === 'z' ? b : a);
+        x = bw.xMin + Math.random() * (bw.xMax - bw.xMin);
+        y = bw.yMin + Math.random() * (bw.yMax - bw.yMin);
+        z = bw.z;
         if (this._checkNoOverlap(x, y, z, minDist)) break;
       }
     }

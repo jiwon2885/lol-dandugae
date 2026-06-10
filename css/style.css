@@ -1102,6 +1102,20 @@ body {
   cursor: crosshair;
   overflow: hidden;
 }
+#screen-game.fps-no-cursor,
+#screen-game.fps-no-cursor * {
+  cursor: none !important;
+}
+#screen-game.fps-no-cursor #pause-overlay,
+#screen-game.fps-no-cursor #pause-overlay * {
+  cursor: default !important;
+}
+#screen-game.fps-no-cursor #pause-overlay button {
+  cursor: pointer !important;
+}
+#screen-game.fps-no-cursor #pause-overlay input {
+  cursor: pointer !important;
+}
 
 #game-canvas {
   position: absolute;
