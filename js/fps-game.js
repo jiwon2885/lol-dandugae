@@ -217,24 +217,23 @@ class FPSGameEngine {
       }
     }
 
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xe84057, roughness: 0.25, metalness: 0.3,
-      emissive: 0x991020, emissiveIntensity: 0.3,
-    });
+    let mat;
+    if (this._faceTextures.length > 0) {
+      const tex = this._faceTextures[Math.floor(Math.random() * this._faceTextures.length)];
+      mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.4,
+        metalness: 0.1,
+      });
+    } else {
+      mat = new THREE.MeshStandardMaterial({
+        color: 0xe84057, roughness: 0.25, metalness: 0.3,
+        emissive: 0x991020, emissiveIntensity: 0.3,
+      });
+    }
     const sphere = new THREE.Mesh(this._targetGeo, mat);
     sphere.position.set(x, y, z);
     this._scene.add(sphere);
-
-    // Face texture — large billboard sprite
-    if (this._faceTextures.length > 0) {
-      const tex = this._faceTextures[Math.floor(Math.random() * this._faceTextures.length)];
-      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
-      const faceSprite = new THREE.Sprite(spriteMat);
-      faceSprite.scale.set(1.0, 1.0, 1);
-      faceSprite.renderOrder = 1;
-      sphere.add(faceSprite);
-      sphere.userData.faceSprite = faceSprite;
-    }
 
     // Glow ring
     const ringGeo = new THREE.RingGeometry(0.55, 0.65, 32);
@@ -270,8 +269,6 @@ class FPSGameEngine {
   }
 
   _removeTarget(target) {
-    const sprite = target.mesh.userData.faceSprite;
-    if (sprite) sprite.material.dispose();
     const ring = target.mesh.userData.ring;
     if (ring) { ring.material.dispose(); ring.geometry.dispose(); }
     this._scene.remove(target.mesh);
