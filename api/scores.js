@@ -55,11 +55,12 @@ export default async function handler(req, res) {
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
-      const allowedModes = ['grid', 'triple', 'tracking', 'fps-grid'];
+      const allowedModes = ['grid', 'triple', 'tracking', 'fps-grid', 'fps-triple', 'fps-tracking'];
       const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
-      const maxKills = mode === 'tracking' ? 240 : 120;
+      const isTrackingMode = mode === 'tracking' || mode === 'fps-tracking';
+      const maxKills = isTrackingMode ? 240 : 120;
       const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), maxKills));
-      const durationSec = Number(entry.durationSec) || (mode === 'tracking' ? 60 : 30);
+      const durationSec = Number(entry.durationSec) || (isTrackingMode ? 60 : 30);
       const accuracy = Math.max(0, Math.min(Math.floor(Number(entry.accuracy) || 0), 100));
       const maxCombo = Math.max(0, Math.min(Math.floor(Number(entry.maxCombo) || 0), kills));
       const reactionMs = Math.max(0, Math.min(Math.floor(Number(entry.reactionMs) || 0), 9999));
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
       const mousePath = Array.isArray(entry.mousePath) ? entry.mousePath : [];
       let suspicionScore = 0; // accumulate suspicion, reject at threshold
 
-      if (kills > 0 && mode !== 'tracking' && !mode.startsWith('fps-')) {
+      if (kills > 0 && !isTrackingMode && !mode.startsWith('fps-')) {
         const hits = clickLog.filter(c => c.h === 1);
 
         // 1) Click log must have enough hits matching reported kills
@@ -190,7 +191,8 @@ export default async function handler(req, res) {
 
       // Recalculate score server-side (don't trust client score)
       const killPts = kills * 10;
-      const accPts = mode === 'tracking' ? Math.round(accuracy * 2) : Math.round(accuracy * 0.5);
+      const isTracking = mode === 'tracking' || mode === 'fps-tracking';
+      const accPts = isTracking ? Math.round(accuracy * 2) : Math.round(accuracy * 0.5);
       const comboPts = maxCombo * 2;
       const score = killPts + accPts + comboPts;
 

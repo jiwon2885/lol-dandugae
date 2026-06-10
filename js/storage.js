@@ -54,7 +54,7 @@ const Storage = (() => {
   // tracking: kills×10 + trackAccuracy×2 + maxCombo×2
   function calcScore(entry) {
     const killPts = (entry.kills || 0) * 10;
-    if (entry.mode === 'tracking') {
+    if (entry.mode === 'tracking' || entry.mode === 'fps-tracking') {
       const accPts = Math.round((entry.accuracy || 0) * 2);
       const comboPts = (entry.maxCombo || 0) * 2;
       return killPts + accPts + comboPts;

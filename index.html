@@ -62,11 +62,7 @@
     <div class="mode-container">
       <h2 class="mode-title">SELECT MODE</h2>
       <p class="mode-subtitle">종목을 선택하세요</p>
-      <div class="mode-category-toggle">
-        <button class="mode-cat-btn active" data-cat="normal">일반</button>
-        <button class="mode-cat-btn" data-cat="fps">FPS</button>
-      </div>
-      <div class="mode-cards mode-cards-normal">
+      <div class="mode-cards">
         <div class="mode-card" data-mode="grid">
           <div class="mode-card-bg mode-bg-grid">
             <div class="preview-target" style="top:45%;left:50%"></div>
@@ -102,18 +98,6 @@
           </div>
         </div>
       </div>
-      <div class="mode-cards mode-cards-fps" style="display:none">
-        <div class="mode-card" data-mode="fps-grid">
-          <div class="mode-card-bg mode-bg-fps">
-            <div class="preview-crosshair">+</div>
-          </div>
-          <div class="mode-card-content">
-            <h3>FPS GRID SHOT</h3>
-            <p class="mode-desc">1인칭 시점의 3D 공간에서 구체 타겟을 조준하여 파괴하라. 에임랩 스타일의 정밀 사격 훈련.</p>
-            <span class="mode-tag">FPS</span>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -122,6 +106,10 @@
     <div class="lobby-container">
       <div class="lobby-mode-header">
         <span id="lobby-mode-name" class="lobby-mode-name"></span>
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" data-view="normal">일반</button>
+          <button class="view-toggle-btn" data-view="fps">FPS</button>
+        </div>
       </div>
       <div class="lobby-header">
         <div class="lobby-header-left">
@@ -297,6 +285,8 @@
         <button class="ranking-tab" data-mode="triple">Triple Shot</button>
         <button class="ranking-tab" data-mode="tracking">Tracking</button>
         <button class="ranking-tab" data-mode="fps-grid">FPS Grid</button>
+        <button class="ranking-tab" data-mode="fps-triple">FPS Triple</button>
+        <button class="ranking-tab" data-mode="fps-tracking">FPS Tracking</button>
       </div>
       <div id="podium" class="podium"></div>
       <div class="ranking-table-wrap">

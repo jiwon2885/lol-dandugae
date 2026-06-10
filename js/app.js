@@ -60,6 +60,7 @@
   let bgImage = null;
   let activeCountdownInterval = null;
   let currentMode = 'grid'; // 'grid' | 'triple' | 'tracking'
+  let fpsView = false; // true = FPS 3D view, false = normal 2D view
 
   // Load background image
   const bgImg = new Image();
@@ -223,27 +224,25 @@
     });
   });
 
-  // Mode category toggle (일반 / FPS)
-  const normalCardsDiv = document.querySelector('.mode-cards-normal');
-  const fpsCardsDiv = document.querySelector('.mode-cards-fps');
-  document.querySelectorAll('.mode-cat-btn').forEach(btn => {
+  // View toggle in lobby (일반 / FPS)
+  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const cat = btn.dataset.cat;
-      document.querySelectorAll('.mode-cat-btn').forEach(b => b.classList.toggle('active', b === btn));
-      if (cat === 'fps') {
-        normalCardsDiv.style.display = 'none';
-        fpsCardsDiv.style.display = '';
-      } else {
-        normalCardsDiv.style.display = '';
-        fpsCardsDiv.style.display = 'none';
-      }
+      const view = btn.dataset.view;
+      fpsView = (view === 'fps');
+      document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b === btn));
+      // Re-render lobby info for view change
+      updateLobbyInfo();
     });
   });
 
   // ========== LOBBY ==========
-  const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity, 'fps-grid': Infinity };
-  const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking', 'fps-grid': 'FPS Grid Shot' };
-  const MODE_DURATION = { grid: 30, triple: 30, tracking: 60, 'fps-grid': 30 };
+  const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity };
+  const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking' };
+  const MODE_DURATION = { grid: 30, triple: 30, tracking: 60 };
+
+  function getEffectiveMode() {
+    return fpsView ? 'fps-' + currentMode : currentMode;
+  }
   const TARGET_SIZES = { grid: 100, triple: 120, tracking: 100 };
 
   function enterLobby() {
@@ -254,13 +253,22 @@
     const modeName = document.getElementById('lobby-mode-name');
     if (modeName) modeName.textContent = MODE_LABELS[currentMode] || '';
 
-    // Update game time & target size display
+    // Sync view toggle buttons
+    document.querySelectorAll('.view-toggle-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === (fpsView ? 'fps' : 'normal'));
+    });
+
+    updateLobbyInfo();
+    renderFacePreviews();
+    renderLobbyHistory(getEffectiveMode());
+  }
+
+  function updateLobbyInfo() {
     const dur = MODE_DURATION[currentMode] || 30;
-    const isFpsMode = currentMode.startsWith('fps-');
     const infoVals = document.querySelectorAll('.lobby-info-value');
     const infoLabels = document.querySelectorAll('.lobby-info-label');
     if (infoVals[0]) infoVals[0].textContent = dur + '초';
-    if (isFpsMode) {
+    if (fpsView) {
       const fpsSens = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
       if (infoLabels[1]) infoLabels[1].textContent = 'FPS 감도';
       if (infoVals[1]) infoVals[1].textContent = fpsSens.toFixed(2);
@@ -269,9 +277,6 @@
       if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
       if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
     }
-
-    renderFacePreviews();
-    renderLobbyHistory(currentMode);
   }
 
   let faceWraps = {}; // persistent DOM references by index
@@ -495,7 +500,7 @@
 
   // ========== GAME ==========
   function startGame() {
-    const isFps = currentMode.startsWith('fps-');
+    const isFps = fpsView;
     // Toggle HUD items based on mode
     const isTracking = currentMode === 'tracking';
     document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
@@ -506,7 +511,8 @@
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
-    if (hudModeBadge) hudModeBadge.textContent = MODE_LABELS[currentMode] || '';
+    const label = MODE_LABELS[currentMode] || '';
+    if (hudModeBadge) hudModeBadge.textContent = isFps ? 'FPS ' + label : label;
 
     // Reset urgency state
     hudUrgent = false;
@@ -591,14 +597,14 @@
       gameEngine = null;
     }
     const gameDuration = MODE_DURATION[currentMode] || 30;
-    const isFps = currentMode.startsWith('fps-');
+    const isFps = fpsView;
 
     if (isFps) {
       const fpsContainer = document.getElementById('fps-container');
       fpsContainer.innerHTML = ''; // clear old WebGL canvas
       const fpsSens = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
       gameEngine = new FPSGameEngine(fpsContainer, {
-        mode: currentMode,
+        mode: getEffectiveMode(),
         faceImages: getSelectedFaceImages(),
         duration: gameDuration,
         sensitivity: fpsSens,
@@ -719,7 +725,7 @@
       bonusPoints: stats.bonusPoints,
       grade,
       kpm: stats.kpm,
-      mode: currentMode,
+      mode: getEffectiveMode(),
       clickLog: stats.clickLog || [],
       mousePath: stats.mousePath || [],
     }).then(result => {
@@ -796,7 +802,7 @@
     }
 
     // Save to history & render chart
-    saveToHistory(currentMode, {
+    saveToHistory(getEffectiveMode(), {
       score: totalScore,
       kills: stats.kills,
       accuracy: displayAccuracy,
@@ -808,7 +814,7 @@
     });
 
     // Show personal best
-    const history = getHistory(currentMode);
+    const history = getHistory(getEffectiveMode());
     const allScores = history.map(h => h.score);
     const personalBest = Math.max(...allScores);
     if (resultPersonalBest) {
@@ -817,7 +823,7 @@
     }
 
     // Render history chart (delay for end overlay + screen transition + reveal anim)
-    setTimeout(() => renderResultHistory(currentMode, totalScore), 1600);
+    setTimeout(() => renderResultHistory(getEffectiveMode(), totalScore), 1600);
   }
 
   // Mode-specific grade thresholds (balanced to similar difficulty)
@@ -825,7 +831,6 @@
     grid:       { 'S+': 700, S: 680, A: 500, B: 300 },
     triple:     { 'S+': 900, S: 850, A: 650, B: 400 },
     tracking:   { 'S+': 600, S: 550, A: 400, B: 250 },
-    'fps-grid': { 'S+': 700, S: 680, A: 500, B: 300 },
   };
 
   function calcGrade(stats) {
@@ -1179,7 +1184,7 @@
   const MAX_PAUSES = 2;
 
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && gameEngine && gameEngine.running && !currentMode.startsWith('fps-')) {
+    if (!document.fullscreenElement && gameEngine && gameEngine.running && !fpsView) {
       pauseGame('전체화면이 해제되었습니다');
     }
   });
@@ -1243,7 +1248,7 @@
 
   el.btnResume.addEventListener('click', () => {
     if (!gamePaused) return;
-    if (currentMode.startsWith('fps-')) {
+    if (fpsView) {
       // FPS mode: no fullscreen needed, just resume with countdown
       startResumeCountdown();
     } else if (document.documentElement.requestFullscreen) {
@@ -1286,7 +1291,7 @@
         gamePaused = false;
         if (gameEngine) {
           // Respawn target at new position to prevent pre-aiming
-          if (gameEngine.mode && gameEngine.mode.startsWith('fps-')) {
+          if (fpsView) {
             if (gameEngine.respawnTargets) gameEngine.respawnTargets();
           } else if (gameEngine.mode === 'triple') {
             for (let i = 0; i < 3; i++) gameEngine._spawnTripleTarget(i);
