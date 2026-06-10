@@ -448,9 +448,8 @@ body {
 
 /* ===== FPS Container & Crosshair ===== */
 #fps-container {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  position: absolute;
+  inset: 0;
   z-index: 1;
 }
 #fps-container canvas {
@@ -459,10 +458,10 @@ body {
   height: 100% !important;
 }
 .fps-crosshair {
-  position: fixed;
+  position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 50;
+  z-index: 5;
   pointer-events: none;
 }
 .crosshair-h, .crosshair-v {

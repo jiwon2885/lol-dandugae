@@ -64,7 +64,7 @@ class FPSGameEngine {
     this._boundClick = () => this._onShoot();
     this._boundContextMenu = (e) => e.preventDefault();
     this._boundPointerLockChange = () => {
-      if (!document.pointerLockElement && this.running && this.onPause) {
+      if (!document.pointerLockElement && this.running && !this.paused && this.onPause) {
         this.onPause();
       }
     };
@@ -208,7 +208,11 @@ class FPSGameEngine {
   }
 
   _onShoot() {
-    if (!this.running || !document.pointerLockElement) return;
+    if (!this.running) return;
+    if (!document.pointerLockElement) {
+      this.requestPointerLock();
+      return;
+    }
     const clickTime = this._perfNow() - this._gameStartTime;
 
     this._raycaster.setFromCamera(this._screenCenter, this._camera);
