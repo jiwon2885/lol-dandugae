@@ -55,7 +55,7 @@ export default async function handler(req, res) {
 
       // Server-side validation: sanitize and clamp values
       const nickname = String(entry.nickname).slice(0, 16);
-      const allowedModes = ['grid', 'triple', 'tracking'];
+      const allowedModes = ['grid', 'triple', 'tracking', 'fps-grid'];
       const mode = allowedModes.includes(entry.mode) ? entry.mode : 'grid';
       const maxKills = mode === 'tracking' ? 240 : 120;
       const kills = Math.max(0, Math.min(Math.floor(Number(entry.kills) || 0), maxKills));
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       const mousePath = Array.isArray(entry.mousePath) ? entry.mousePath : [];
       let suspicionScore = 0; // accumulate suspicion, reject at threshold
 
-      if (kills > 0 && mode !== 'tracking') {
+      if (kills > 0 && mode !== 'tracking' && !mode.startsWith('fps-')) {
         const hits = clickLog.filter(c => c.h === 1);
 
         // 1) Click log must have enough hits matching reported kills

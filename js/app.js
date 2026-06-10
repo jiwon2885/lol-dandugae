@@ -223,10 +223,28 @@
     });
   });
 
+  // Mode category toggle (일반 / FPS)
+  const normalCardsDiv = document.querySelector('.mode-cards-normal');
+  const fpsCardsDiv = document.querySelector('.mode-cards-fps');
+  document.querySelectorAll('.mode-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      document.querySelectorAll('.mode-cat-btn').forEach(b => b.classList.toggle('active', b === btn));
+      if (cat === 'fps') {
+        normalCardsDiv.style.display = 'none';
+        fpsCardsDiv.style.display = '';
+      } else {
+        normalCardsDiv.style.display = '';
+        fpsCardsDiv.style.display = 'none';
+      }
+    });
+  });
+
   // ========== LOBBY ==========
-  const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity };
-  const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking' };
-  const MODE_DURATION = { grid: 30, triple: 30, tracking: 60 };
+  const MODE_MAX_FACES = { grid: Infinity, triple: Infinity, tracking: Infinity, 'fps-grid': Infinity };
+  const MODE_LABELS = { grid: 'Grid Shot', triple: 'Triple Shot', tracking: 'Tracking', 'fps-grid': 'FPS Grid Shot' };
+  const MODE_DURATION = { grid: 30, triple: 30, tracking: 60, 'fps-grid': 30 };
+  const TARGET_SIZES = { grid: 100, triple: 120, tracking: 100 };
 
   function enterLobby() {
     showScreen('lobby');
@@ -238,10 +256,19 @@
 
     // Update game time & target size display
     const dur = MODE_DURATION[currentMode] || 30;
-    const tSize = currentMode === 'tracking' ? 100 : 120;
+    const isFpsMode = currentMode.startsWith('fps-');
     const infoVals = document.querySelectorAll('.lobby-info-value');
+    const infoLabels = document.querySelectorAll('.lobby-info-label');
     if (infoVals[0]) infoVals[0].textContent = dur + '초';
-    if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
+    if (isFpsMode) {
+      const fpsSens = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
+      if (infoLabels[1]) infoLabels[1].textContent = 'FPS 감도';
+      if (infoVals[1]) infoVals[1].textContent = fpsSens.toFixed(2);
+    } else {
+      const tSize = TARGET_SIZES[currentMode] || 100;
+      if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
+      if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
+    }
 
     renderFacePreviews();
     renderLobbyHistory(currentMode);
@@ -432,6 +459,31 @@
     });
   });
 
+  // FPS Sensitivity settings
+  const fpsSensSlider = document.getElementById('fps-sensitivity');
+  const fpsSensVal = document.getElementById('fps-sens-val');
+  const pauseFpsSensSlider = document.getElementById('pause-fps-sensitivity');
+  const pauseFpsSensVal = document.getElementById('pause-fps-sens-val');
+  const savedFpsSens = localStorage.getItem('fps_sensitivity');
+  if (savedFpsSens != null) {
+    const sliderVal = Math.round(parseFloat(savedFpsSens) * 100);
+    fpsSensSlider.value = sliderVal;
+    fpsSensVal.textContent = parseFloat(savedFpsSens).toFixed(2);
+    pauseFpsSensSlider.value = sliderVal;
+    pauseFpsSensVal.textContent = parseFloat(savedFpsSens).toFixed(2);
+  }
+  function syncFpsSens(val) {
+    const sens = (Number(val) / 100).toFixed(2);
+    fpsSensSlider.value = val;
+    fpsSensVal.textContent = sens;
+    pauseFpsSensSlider.value = val;
+    pauseFpsSensVal.textContent = sens;
+    localStorage.setItem('fps_sensitivity', sens);
+    if (gameEngine && gameEngine.sensitivity != null) gameEngine.sensitivity = parseFloat(sens);
+  }
+  fpsSensSlider.addEventListener('input', () => syncFpsSens(fpsSensSlider.value));
+  pauseFpsSensSlider.addEventListener('input', () => syncFpsSens(pauseFpsSensSlider.value));
+
   // Start game
   el.btnStart.addEventListener('click', () => {
     if (selectedFaces.size < 1) return;
@@ -443,10 +495,14 @@
 
   // ========== GAME ==========
   function startGame() {
+    const isFps = currentMode.startsWith('fps-');
     // Toggle HUD items based on mode
     const isTracking = currentMode === 'tracking';
     document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
     document.querySelectorAll('.hud-grid').forEach(el => el.style.display = isTracking ? 'none' : '');
+
+    // Show/hide FPS sensitivity in pause menu
+    document.querySelectorAll('.pause-fps-sens').forEach(el => el.style.display = isFps ? '' : 'none');
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
@@ -457,28 +513,41 @@
     el.hudTime.classList.remove('urgent');
     if (vignetteEl) vignetteEl.classList.remove('active');
 
-    // Force fullscreen to prevent window shrinking exploit
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
+    if (isFps) {
+      // FPS mode: show FPS container, hide 2D canvas
+      el.canvas.style.display = 'none';
+      document.getElementById('fps-container').style.display = 'block';
+      document.getElementById('fps-crosshair').style.display = '';
+    } else {
+      // Normal mode: show 2D canvas, hide FPS
+      el.canvas.style.display = '';
+      document.getElementById('fps-container').style.display = 'none';
+      document.getElementById('fps-crosshair').style.display = 'none';
+      // Force fullscreen to prevent window shrinking exploit
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
     }
     showScreen('game');
 
-    // Set canvas size before countdown (engine will draw bg on start)
-    const cvs = el.canvas;
-    const sw = window.screen.width;
-    const sh = window.screen.height;
-    cvs.width = sw;
-    cvs.height = sh;
-    cvs.style.width = sw + 'px';
-    cvs.style.height = sh + 'px';
-    if (bgImage) {
-      const cx = cvs.getContext('2d');
-      const scale = Math.max(sw / bgImage.width, sh / bgImage.height);
-      const w = bgImage.width * scale;
-      const h = bgImage.height * scale;
-      cx.drawImage(bgImage, (sw - w) / 2, (sh - h) / 2, w, h);
-      cx.fillStyle = 'rgba(10, 14, 20, 0.35)';
-      cx.fillRect(0, 0, sw, sh);
+    if (!isFps) {
+      // Set canvas size before countdown (engine will draw bg on start)
+      const cvs = el.canvas;
+      const sw = window.screen.width;
+      const sh = window.screen.height;
+      cvs.width = sw;
+      cvs.height = sh;
+      cvs.style.width = sw + 'px';
+      cvs.style.height = sh + 'px';
+      if (bgImage) {
+        const cx = cvs.getContext('2d');
+        const scale = Math.max(sw / bgImage.width, sh / bgImage.height);
+        const w = bgImage.width * scale;
+        const h = bgImage.height * scale;
+        cx.drawImage(bgImage, (sw - w) / 2, (sh - h) / 2, w, h);
+        cx.fillStyle = 'rgba(10, 14, 20, 0.35)';
+        cx.fillRect(0, 0, sw, sh);
+      }
     }
 
     // Start BGM + Audio context
@@ -522,15 +591,32 @@
       gameEngine = null;
     }
     const gameDuration = MODE_DURATION[currentMode] || 30;
-    gameEngine = new GameEngine(el.canvas, {
-      mode: currentMode,
-      faceImages: getSelectedFaceImages(),
-      duration: gameDuration,
-      targetSize: currentMode === 'tracking' ? 100 : 120,
-      bgImage,
-      onTick: (stats) => updateHUD(stats),
-      onEnd: (stats) => showResult(stats),
-    });
+    const isFps = currentMode.startsWith('fps-');
+
+    if (isFps) {
+      const fpsContainer = document.getElementById('fps-container');
+      fpsContainer.innerHTML = ''; // clear old WebGL canvas
+      const fpsSens = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
+      gameEngine = new FPSGameEngine(fpsContainer, {
+        mode: currentMode,
+        faceImages: getSelectedFaceImages(),
+        duration: gameDuration,
+        sensitivity: fpsSens,
+        onTick: (stats) => updateHUD(stats),
+        onEnd: (stats) => showResult(stats),
+        onPause: () => pauseGame('포인터 잠금이 해제되었습니다'),
+      });
+    } else {
+      gameEngine = new GameEngine(el.canvas, {
+        mode: currentMode,
+        faceImages: getSelectedFaceImages(),
+        duration: gameDuration,
+        targetSize: TARGET_SIZES[currentMode] || 100,
+        bgImage,
+        onTick: (stats) => updateHUD(stats),
+        onEnd: (stats) => showResult(stats),
+      });
+    }
     gameEngine.start();
     pauseCount = 0;
     updateHUD({ timeLeft: gameDuration, kills: 0, combo: 0, avgReaction: 0, trackTime: 0, trackAccuracy: 0 });
@@ -599,6 +685,8 @@
         gameEngine.destroy();
         gameEngine = null;
       }
+      document.getElementById('fps-container').style.display = 'none';
+      document.getElementById('fps-crosshair').style.display = 'none';
       showScreen('result');
     }, 1400);
 
@@ -734,9 +822,10 @@
 
   // Mode-specific grade thresholds (balanced to similar difficulty)
   const GRADE_THRESHOLDS = {
-    grid:     { 'S+': 700, S: 680, A: 500, B: 300 },
-    triple:   { 'S+': 900, S: 850, A: 650, B: 400 },
-    tracking: { 'S+': 600, S: 550, A: 400, B: 250 },
+    grid:       { 'S+': 700, S: 680, A: 500, B: 300 },
+    triple:     { 'S+': 900, S: 850, A: 650, B: 400 },
+    tracking:   { 'S+': 600, S: 550, A: 400, B: 250 },
+    'fps-grid': { 'S+': 700, S: 680, A: 500, B: 300 },
   };
 
   function calcGrade(stats) {
@@ -1090,7 +1179,7 @@
   const MAX_PAUSES = 2;
 
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && gameEngine && gameEngine.running) {
+    if (!document.fullscreenElement && gameEngine && gameEngine.running && !currentMode.startsWith('fps-')) {
       pauseGame('전체화면이 해제되었습니다');
     }
   });
@@ -1142,6 +1231,8 @@
       gameEngine.destroy();
       gameEngine = null;
     }
+    document.getElementById('fps-container').style.display = 'none';
+    document.getElementById('fps-crosshair').style.display = 'none';
     AudioManager.stopBGM();
     el.pauseOverlay.classList.remove('active');
     if (document.fullscreenElement) {
@@ -1152,8 +1243,10 @@
 
   el.btnResume.addEventListener('click', () => {
     if (!gamePaused) return;
-    // Re-enter fullscreen first
-    if (document.documentElement.requestFullscreen) {
+    if (currentMode.startsWith('fps-')) {
+      // FPS mode: no fullscreen needed, just resume with countdown
+      startResumeCountdown();
+    } else if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().then(() => {
         startResumeCountdown();
       }).catch(() => {
@@ -1193,7 +1286,9 @@
         gamePaused = false;
         if (gameEngine) {
           // Respawn target at new position to prevent pre-aiming
-          if (gameEngine.mode === 'triple') {
+          if (gameEngine.mode && gameEngine.mode.startsWith('fps-')) {
+            if (gameEngine.respawnTargets) gameEngine.respawnTargets();
+          } else if (gameEngine.mode === 'triple') {
             for (let i = 0; i < 3; i++) gameEngine._spawnTripleTarget(i);
           } else if (gameEngine.mode === 'tracking') {
             gameEngine._spawnTrackingTarget();

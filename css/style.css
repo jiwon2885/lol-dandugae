@@ -402,6 +402,89 @@ body {
 .mode-bg-grid, .mode-bg-triple, .mode-bg-tracking {
   background: url('../assets/bg.png') center/cover no-repeat;
 }
+.mode-bg-fps {
+  background: linear-gradient(135deg, #0a1e25 0%, #153a45 50%, #0a1e25 100%);
+}
+.preview-crosshair {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(73,217,178,0.5);
+  font-size: 2.5rem;
+  font-weight: 300;
+  font-family: var(--font-body);
+  text-shadow: 0 0 12px rgba(73,217,178,0.4);
+}
+
+/* ===== Mode Category Toggle ===== */
+.mode-category-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.mode-cat-btn {
+  padding: 7px 24px;
+  border: 1px solid rgba(200,169,110,0.25);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.5px;
+}
+.mode-cat-btn.active {
+  background: rgba(200,169,110,0.15);
+  color: var(--gold-bright);
+  border-color: var(--gold);
+}
+.mode-cat-btn:hover:not(.active) {
+  background: rgba(200,169,110,0.08);
+  border-color: rgba(200,169,110,0.4);
+}
+
+/* ===== FPS Container & Crosshair ===== */
+#fps-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+}
+#fps-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+.fps-crosshair {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+}
+.crosshair-h, .crosshair-v {
+  position: absolute;
+  background: rgba(73,217,178,0.85);
+}
+.crosshair-h {
+  width: 18px; height: 2px;
+  top: -1px; left: -9px;
+}
+.crosshair-v {
+  width: 2px; height: 18px;
+  top: -9px; left: -1px;
+}
+.crosshair-dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #49d9b2;
+  position: absolute;
+  top: -1.5px; left: -1.5px;
+  box-shadow: 0 0 4px rgba(73,217,178,0.6);
+}
 
 /* === Preview targets (in-game style circles) === */
 .preview-target {
