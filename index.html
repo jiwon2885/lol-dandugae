@@ -385,72 +385,83 @@
   <div id="settings-overlay" class="settings-overlay">
     <div class="settings-modal">
       <div class="settings-header">
-        <h3>설정</h3>
+        <div class="settings-header-left">
+          <svg class="settings-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <h3>설정</h3>
+        </div>
         <button id="btn-settings-close" class="btn-settings-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
-      <div class="settings-section">
-        <div class="settings-section-title">소리</div>
-        <div class="setting-row">
-          <label>BGM 볼륨</label>
-          <div class="slider-ctrl">
-            <input type="range" id="vol-bgm" min="0" max="100" value="50">
-            <span id="vol-bgm-val" class="slider-val">50</span>
+      <div class="settings-body">
+        <div class="settings-section">
+          <div class="settings-section-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>소리</div>
+          <div class="settings-section-card">
+            <div class="setting-row">
+              <label>BGM 볼륨</label>
+              <div class="slider-ctrl">
+                <input type="range" id="vol-bgm" min="0" max="100" value="50">
+                <span id="vol-bgm-val" class="slider-val">50</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>효과음 볼륨</label>
+              <div class="slider-ctrl">
+                <input type="range" id="vol-sfx" min="0" max="100" value="50">
+                <span id="vol-sfx-val" class="slider-val">50</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="setting-row">
-          <label>효과음 볼륨</label>
-          <div class="slider-ctrl">
-            <input type="range" id="vol-sfx" min="0" max="100" value="50">
-            <span id="vol-sfx-val" class="slider-val">50</span>
+        <div class="settings-section">
+          <div class="settings-section-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>일반 모드</div>
+          <div class="settings-section-card">
+            <div class="setting-row">
+              <label>마우스 감도</label>
+              <div class="slider-ctrl">
+                <input type="range" id="settings-normal-sensitivity" min="1" max="30" value="10" step="1">
+                <span id="settings-normal-sens-val" class="slider-val slider-val-editable">1.0</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>커서 모양</label>
+              <div class="cursor-options">
+                <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
+                <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
+                <button class="btn-cursor" data-cursor="dot" title="도트"><span class="cursor-dot-icon">●</span></button>
+                <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
+                <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-section-title">일반 모드</div>
-        <div class="setting-row">
-          <label>마우스 감도</label>
-          <div class="slider-ctrl">
-            <input type="range" id="settings-normal-sensitivity" min="1" max="30" value="10" step="1">
-            <span id="settings-normal-sens-val" class="slider-val slider-val-editable">1.0</span>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>커서 모양</label>
-          <div class="cursor-options">
-            <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
-            <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
-            <button class="btn-cursor" data-cursor="dot" title="도트"><span class="cursor-dot-icon">●</span></button>
-            <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
-            <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
-          </div>
-        </div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-section-title">FPS 뷰</div>
-        <div class="setting-row">
-          <label>크로스헤어</label>
-          <div class="crosshair-options">
-            <button class="btn-crosshair active" data-ch="cross" title="십자"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span></div></button>
-            <button class="btn-crosshair" data-ch="dot" title="도트"><div class="ch-preview"><span style="width:6px;height:6px;top:7px;left:7px;border-radius:50%"></span></div></button>
-            <button class="btn-crosshair" data-ch="circle" title="원형"><div class="ch-preview"><span style="width:14px;height:14px;top:3px;left:3px;border-radius:50%;background:transparent;border:2px solid #49d9b2"></span><span style="width:3px;height:3px;top:8.5px;left:8.5px;border-radius:50%"></span></div></button>
-            <button class="btn-crosshair" data-ch="crossdot" title="십자+도트"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span><span style="width:4px;height:4px;top:8px;left:8px;border-radius:50%"></span></div></button>
-            <button class="btn-crosshair" data-ch="gap" title="갭 십자"><div class="ch-preview"><span style="width:5px;height:2px;top:9px;left:1px"></span><span style="width:5px;height:2px;top:9px;left:14px"></span><span style="width:2px;height:5px;top:1px;left:9px"></span><span style="width:2px;height:5px;top:14px;left:9px"></span></div></button>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>감도 기준</label>
-          <div class="sens-game-btns">
-            <button class="sens-game-btn active" data-game="raw">일반</button>
-            <button class="sens-game-btn" data-game="valorant">발로란트</button>
-            <button class="sens-game-btn" data-game="overwatch">오버워치</button>
-            <button class="sens-game-btn" data-game="pubg">배그</button>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>감도 <small id="sens-game-label" class="sens-game-hint">(일반)</small></label>
-          <div class="slider-ctrl">
-            <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
-            <span id="fps-sens-val" class="slider-val slider-val-editable">0.30</span>
+        <div class="settings-section">
+          <div class="settings-section-title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>FPS 뷰</div>
+          <div class="settings-section-card">
+            <div class="setting-row">
+              <label>크로스헤어</label>
+              <div class="crosshair-options">
+                <button class="btn-crosshair active" data-ch="cross" title="십자"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span></div></button>
+                <button class="btn-crosshair" data-ch="dot" title="도트"><div class="ch-preview"><span style="width:6px;height:6px;top:7px;left:7px;border-radius:50%"></span></div></button>
+                <button class="btn-crosshair" data-ch="circle" title="원형"><div class="ch-preview"><span style="width:14px;height:14px;top:3px;left:3px;border-radius:50%;background:transparent;border:2px solid #49d9b2"></span><span style="width:3px;height:3px;top:8.5px;left:8.5px;border-radius:50%"></span></div></button>
+                <button class="btn-crosshair" data-ch="crossdot" title="십자+도트"><div class="ch-preview"><span style="width:14px;height:2px;top:9px;left:3px"></span><span style="width:2px;height:14px;top:3px;left:9px"></span><span style="width:4px;height:4px;top:8px;left:8px;border-radius:50%"></span></div></button>
+                <button class="btn-crosshair" data-ch="gap" title="갭 십자"><div class="ch-preview"><span style="width:5px;height:2px;top:9px;left:1px"></span><span style="width:5px;height:2px;top:9px;left:14px"></span><span style="width:2px;height:5px;top:1px;left:9px"></span><span style="width:2px;height:5px;top:14px;left:9px"></span></div></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>감도 기준</label>
+              <div class="sens-game-btns">
+                <button class="sens-game-btn active" data-game="raw">일반</button>
+                <button class="sens-game-btn" data-game="valorant">발로란트</button>
+                <button class="sens-game-btn" data-game="overwatch">오버워치</button>
+                <button class="sens-game-btn" data-game="pubg">배그</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>감도 <small id="sens-game-label" class="sens-game-hint">(일반)</small></label>
+              <div class="slider-ctrl">
+                <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
+                <span id="fps-sens-val" class="slider-val slider-val-editable">0.30</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
