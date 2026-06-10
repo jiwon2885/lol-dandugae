@@ -147,6 +147,18 @@
         </div>
       </div>
 
+      <!-- Lobby normal sensitivity (shown when normal view) -->
+      <div id="lobby-normal-sens-card" class="lobby-card lobby-sens-card" style="display:none;">
+        <h3 class="lobby-sens-title">일반 감도 설정</h3>
+        <div class="setting-row">
+          <label>마우스 감도</label>
+          <div class="slider-ctrl">
+            <input type="range" id="lobby-normal-sensitivity" min="1" max="30" value="10" step="1">
+            <span id="lobby-normal-sens-val" class="slider-val slider-val-editable">1.0</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Lobby FPS sensitivity (shown when FPS view) -->
       <div id="lobby-sens-card" class="lobby-card lobby-sens-card" style="display:none;">
         <h3 class="lobby-sens-title">FPS 감도 설정</h3>
@@ -241,6 +253,13 @@
               <button class="btn-cursor pause-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
               <button class="btn-cursor pause-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
               <button class="btn-cursor pause-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
+            </div>
+          </div>
+          <div class="setting-row pause-normal-sens" style="display:none">
+            <label>마우스 감도</label>
+            <div class="slider-ctrl">
+              <input type="range" id="pause-normal-sensitivity" min="1" max="30" value="10" step="1">
+              <span id="pause-normal-sens-val" class="slider-val slider-val-editable">1.0</span>
             </div>
           </div>
           <div class="setting-row pause-fps-sens" style="display:none">
@@ -369,6 +388,13 @@
       </div>
       <div class="settings-section">
         <div class="settings-section-title">일반 모드</div>
+        <div class="setting-row">
+          <label>마우스 감도</label>
+          <div class="slider-ctrl">
+            <input type="range" id="settings-normal-sensitivity" min="1" max="30" value="10" step="1">
+            <span id="settings-normal-sens-val" class="slider-val slider-val-editable">1.0</span>
+          </div>
+        </div>
         <div class="setting-row">
           <label>커서 모양</label>
           <div class="cursor-options">

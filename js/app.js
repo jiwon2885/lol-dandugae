@@ -283,11 +283,14 @@
       if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
       if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
     }
-    // Show/hide lobby sensitivity card
+    // Show/hide lobby sensitivity cards
+    const lobbyNormalSensCard = document.getElementById('lobby-normal-sens-card');
+    if (lobbyNormalSensCard) lobbyNormalSensCard.style.display = fpsView ? 'none' : '';
     if (lobbySensCard) {
       lobbySensCard.style.display = fpsView ? '' : 'none';
-      if (fpsView) applySensGame(currentSensGame); // sync lobby sliders
+      if (fpsView) applySensGame(currentSensGame);
     }
+    if (!fpsView) syncNormalSens(normalSensitivity);
   }
 
   let faceWraps = {}; // persistent DOM references by index
@@ -493,6 +496,36 @@
     });
   });
 
+  // Normal mode sensitivity
+  const normalSensSliders = [
+    document.getElementById('lobby-normal-sensitivity'),
+    document.getElementById('settings-normal-sensitivity'),
+    document.getElementById('pause-normal-sensitivity'),
+  ];
+  const normalSensVals = [
+    document.getElementById('lobby-normal-sens-val'),
+    document.getElementById('settings-normal-sens-val'),
+    document.getElementById('pause-normal-sens-val'),
+  ];
+  let normalSensitivity = parseFloat(localStorage.getItem('normal_sensitivity') || '1.0');
+
+  function syncNormalSens(val) {
+    const clamped = Math.max(0.1, Math.min(3.0, val));
+    normalSensitivity = clamped;
+    const sliderVal = Math.round(clamped * 10);
+    const displayText = clamped.toFixed(1);
+    for (const s of normalSensSliders) { if (s) s.value = sliderVal; }
+    for (const v of normalSensVals) { if (v) v.textContent = displayText; }
+    localStorage.setItem('normal_sensitivity', clamped.toFixed(2));
+    saveUserSensitivity();
+  }
+
+  // Init normal sensitivity
+  syncNormalSens(normalSensitivity);
+  for (const s of normalSensSliders) {
+    if (s) s.addEventListener('input', () => syncNormalSens(Number(s.value) / 10));
+  }
+
   // FPS Sensitivity settings with game-specific presets
   const fpsSensSlider = document.getElementById('fps-sensitivity');
   const fpsSensVal = document.getElementById('fps-sens-val');
@@ -576,6 +609,7 @@
     const data = {
       fpsSensitivity: parseFloat(localStorage.getItem('fps_sensitivity') || '0.30'),
       fpsSensGame: currentSensGame,
+      normalSensitivity: normalSensitivity,
     };
     localStorage.setItem(key, JSON.stringify(data));
   }
@@ -591,6 +625,11 @@
       }
       if (data.fpsSensGame && SENS_GAMES[data.fpsSensGame]) {
         currentSensGame = data.fpsSensGame;
+      }
+      if (data.normalSensitivity != null) {
+        normalSensitivity = data.normalSensitivity;
+        localStorage.setItem('normal_sensitivity', String(normalSensitivity));
+        syncNormalSens(normalSensitivity);
       }
       applySensGame(currentSensGame);
     } catch {}
@@ -646,6 +685,13 @@
   makeEditable(pauseFpsSensVal, onSensValueEdit);
   makeEditable(lobbySensVal, onSensValueEdit);
 
+  function onNormalSensEdit(val) {
+    syncNormalSens(Math.max(0.1, Math.min(3.0, val)));
+  }
+  for (const v of normalSensVals) {
+    if (v) makeEditable(v, onNormalSensEdit);
+  }
+
   // Start game
   el.btnStart.addEventListener('click', () => {
     if (selectedFaces.size < 1) return;
@@ -665,6 +711,7 @@
 
     // Show/hide FPS sensitivity in pause menu
     document.querySelectorAll('.pause-fps-sens').forEach(el => el.style.display = isFps ? '' : 'none');
+    document.querySelectorAll('.pause-normal-sens').forEach(el => el.style.display = isFps ? 'none' : '');
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
