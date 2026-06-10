@@ -50,9 +50,15 @@ const Storage = (() => {
   }
 
   // --- Score calculation ---
-  // kills×10 + accuracy bonus (max 50) + combo bonus
+  // grid/triple: kills×10 + accuracy×0.5 + maxCombo×2
+  // tracking: kills×10 + trackAccuracy×2 + maxCombo×2
   function calcScore(entry) {
     const killPts = (entry.kills || 0) * 10;
+    if (entry.mode === 'tracking') {
+      const accPts = Math.round((entry.accuracy || 0) * 2);
+      const comboPts = (entry.maxCombo || 0) * 2;
+      return killPts + accPts + comboPts;
+    }
     const accPts = Math.round((entry.accuracy || 0) * 0.5);
     const comboPts = (entry.maxCombo || 0) * 2;
     return killPts + accPts + comboPts;

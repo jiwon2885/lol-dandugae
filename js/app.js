@@ -636,6 +636,7 @@
       accuracy: effectiveAccuracy,
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
+      mode: currentMode,
     });
 
     // Tracking mode: show tracking accuracy instead of click accuracy
@@ -655,6 +656,9 @@
     el.resCombo.textContent = '0';
     el.resKpm.textContent = '0';
 
+    // Tracking mode: compute trackTime in seconds
+    const trackTimeSec = currentMode === 'tracking' ? Math.round((stats.trackTime || 0) / 1000) : 0;
+
     // Trigger reveal animation + grade particles
     requestAnimationFrame(() => {
       resultCard.classList.add('reveal');
@@ -665,7 +669,11 @@
       setTimeout(() => {
         animateCountUp(el.resKills, stats.kills, '', 400);
         animateCountUp(el.resAccuracy, displayAccuracy, '%', 400);
-        animateCountUp(el.resCombo, stats.maxCombo, '', 400);
+        if (currentMode === 'tracking') {
+          animateCountUp(el.resCombo, trackTimeSec, '초', 400);
+        } else {
+          animateCountUp(el.resCombo, stats.maxCombo, '', 400);
+        }
         animateCountUp(el.resKpm, stats.kpm, '', 400);
       }, 500);
       // Show best badge after count-up
@@ -677,10 +685,14 @@
     // Update stat labels for tracking mode
     const statLabels = document.querySelectorAll('.stat-label');
     if (currentMode === 'tracking') {
+      if (statLabels[0]) statLabels[0].textContent = '\ucc98\uce58 \uc218';
       if (statLabels[1]) statLabels[1].textContent = '\ud2b8\ub798\ud0b9 \uc815\ud655\ub3c4';
+      if (statLabels[2]) statLabels[2].textContent = '\ud2b8\ub798\ud0b9 \uc2dc\uac04';
       if (statLabels[3]) statLabels[3].textContent = '\ubd84\ub2f9 \ucc98\uce58';
     } else {
+      if (statLabels[0]) statLabels[0].textContent = '\uaca9\ud30c \uc218';
       if (statLabels[1]) statLabels[1].textContent = '\uc815\ud655\ub3c4';
+      if (statLabels[2]) statLabels[2].textContent = '\ucd5c\ub300 \ucf64\ubcf4';
       if (statLabels[3]) statLabels[3].textContent = '\ubd84\ub2f9 \uaca9\ud30c';
     }
 
@@ -691,6 +703,7 @@
       accuracy: displayAccuracy,
       maxCombo: stats.maxCombo,
       kpm: stats.kpm,
+      trackTimeSec: currentMode === 'tracking' ? trackTimeSec : undefined,
       grade,
       ts: Date.now(),
     });
@@ -861,7 +874,30 @@
     const history = getHistory(mode);
     const section = document.getElementById('history-section');
     if (history.length < 2) {
-      section.style.display = 'none';
+      // Show hint that chart needs more games
+      section.style.display = '';
+      const chartCanvas = document.getElementById('history-chart');
+      if (chartCanvas) {
+        const ctx = chartCanvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const w = chartCanvas.clientWidth;
+        const h = chartCanvas.clientHeight;
+        chartCanvas.width = w * dpr;
+        chartCanvas.height = h * dpr;
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = 'rgba(200,169,110,0.4)';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('2\uD310 \uC774\uC0C1 \uD50C\uB808\uC774\uD558\uBA74 \uADF8\uB798\uD504\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4', w / 2, h / 2);
+      }
+      // Hide stats until we have data
+      const histBest = document.getElementById('history-best');
+      const histAvg = document.getElementById('history-avg');
+      const histTrend = document.getElementById('history-trend');
+      if (histBest) histBest.textContent = '';
+      if (histAvg) histAvg.textContent = '';
+      if (histTrend) histTrend.textContent = '';
       return;
     }
     section.style.display = '';

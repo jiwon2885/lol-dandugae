@@ -190,7 +190,7 @@ export default async function handler(req, res) {
 
       // Recalculate score server-side (don't trust client score)
       const killPts = kills * 10;
-      const accPts = Math.round(accuracy * 0.5);
+      const accPts = mode === 'tracking' ? Math.round(accuracy * 2) : Math.round(accuracy * 0.5);
       const comboPts = maxCombo * 2;
       const score = killPts + accPts + comboPts;
 
