@@ -25,10 +25,7 @@ class GameEngine {
     // Tracking mode state
     this._trackTimeMs = 0;       // total ms cursor was inside target
     this._trackingInside = false; // is cursor currently inside?
-    this._trackDmgAnims = [];    // floating damage tick animations
     this._trackHpFlash = 0;      // HP bar damage flash timer
-    this._trackHpShake = 0;      // HP bar shake timer
-    this._trackHitParticles = []; // spark particles on hit
     this.animations = [];
     this.rafId = null;
     this.lastTime = 0;
@@ -123,10 +120,7 @@ class GameEngine {
     this._gameStartTime = this._perfNow();
     this._trackTimeMs = 0;
     this._trackingInside = false;
-    this._trackDmgAnims = [];
     this._trackHpFlash = 0;
-    this._trackHpShake = 0;
-    this._trackHitParticles = [];
     this.animations = [];
 
     if (this.mode === 'triple') {
@@ -312,9 +306,8 @@ class GameEngine {
       }
     }
 
-    // Decay tracking visual timers
+    // Decay HP flash timer
     if (this._trackHpFlash > 0) this._trackHpFlash = Math.max(0, this._trackHpFlash - dt);
-    if (this._trackHpShake > 0) this._trackHpShake = Math.max(0, this._trackHpShake - dt);
 
     // Hold-to-fire: deal damage while mouse held inside target
     if (this._mouseDown && this._trackingInside && this.target) {
@@ -327,9 +320,6 @@ class GameEngine {
 
         // Damage visual feedback
         this._trackHpFlash = 120;
-        this._trackHpShake = 80;
-        this._spawnTrackDmgNumber(t.x, t.y - t.size / 2 - 20, 5);
-        this._spawnTrackHitSparks(t.x, t.y, t.size / 2);
 
         AudioManager.playHitSound();
         if (t.hp <= 0) {
@@ -595,33 +585,6 @@ class GameEngine {
     }
   }
 
-  // Spawn floating damage number for tracking mode
-  _spawnTrackDmgNumber(x, y, dmg) {
-    this._trackDmgAnims.push({
-      x: x + (Math.random() - 0.5) * 40,
-      y,
-      dmg,
-      startTime: performance.now(),
-      duration: 500,
-    });
-  }
-
-  // Spawn spark particles on tracking hit
-  _spawnTrackHitSparks(tx, ty, r) {
-    for (let i = 0; i < 4; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 1.5 + Math.random() * 3;
-      this._trackHitParticles.push({
-        x: tx + Math.cos(angle) * r * 0.6,
-        y: ty + Math.sin(angle) * r * 0.6,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 1.5 + Math.random() * 2.5,
-        life: 1,
-      });
-    }
-  }
-
   _drawTrackingTarget() {
     if (!this.target || !this.running) return;
     const t = this.target;
@@ -668,54 +631,37 @@ class GameEngine {
       ctx.restore();
     }
 
-    // === Premium HP Bar ===
+    // === HP Bar (clean green) ===
     if (t.hp != null && t.maxHp) {
       const hpRatio = t.hp / t.maxHp;
       const barW = t.size * 1.4;
-      const barH = 10;
+      const barH = 8;
       const barRad = barH / 2;
-
-      // Shake offset when taking damage
-      let shakeX = 0, shakeY = 0;
-      if (this._trackHpShake > 0) {
-        const intensity = (this._trackHpShake / 80) * 2;
-        shakeX = (Math.random() - 0.5) * intensity;
-        shakeY = (Math.random() - 0.5) * intensity;
-      }
-
-      const barX = t.x - barW / 2 + shakeX;
-      const barY = t.y - r - 24 + shakeY;
+      const barX = t.x - barW / 2;
+      const barY = t.y - r - 20;
 
       ctx.save();
 
-      // Bar background (dark with subtle inner shadow)
+      // Background
       ctx.beginPath();
       this._roundRect(ctx, barX - 1, barY - 1, barW + 2, barH + 2, barRad + 1);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
       ctx.fill();
 
-      // Border glow (changes color with HP)
-      const borderColor = hpRatio > 0.5
-        ? 'rgba(73, 217, 178, 0.35)'
-        : hpRatio > 0.25
-          ? 'rgba(240, 212, 138, 0.4)'
-          : 'rgba(232, 64, 87, 0.5)';
+      // Border
       ctx.beginPath();
       this._roundRect(ctx, barX - 1, barY - 1, barW + 2, barH + 2, barRad + 1);
-      ctx.strokeStyle = borderColor;
+      ctx.strokeStyle = 'rgba(73, 217, 178, 0.3)';
       ctx.lineWidth = 1;
-      ctx.shadowColor = borderColor;
-      ctx.shadowBlur = 8;
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
-      // Background track
+      // Track
       ctx.beginPath();
       this._roundRect(ctx, barX, barY, barW, barH, barRad);
       ctx.fillStyle = 'rgba(30, 35, 45, 0.8)';
       ctx.fill();
 
-      // HP fill with gradient
+      // Green fill
       if (hpRatio > 0) {
         const fillW = barW * hpRatio;
         ctx.save();
@@ -723,109 +669,34 @@ class GameEngine {
         this._roundRect(ctx, barX, barY, fillW, barH, barRad);
         ctx.clip();
 
-        // Main color gradient
         const hpGrad = ctx.createLinearGradient(barX, barY, barX, barY + barH);
-        if (hpRatio > 0.5) {
-          hpGrad.addColorStop(0, '#5eeaaa');
-          hpGrad.addColorStop(0.5, '#3cc88a');
-          hpGrad.addColorStop(1, '#2aa070');
-        } else if (hpRatio > 0.25) {
-          hpGrad.addColorStop(0, '#ffe06b');
-          hpGrad.addColorStop(0.5, '#f0c040');
-          hpGrad.addColorStop(1, '#d4a020');
-        } else {
-          hpGrad.addColorStop(0, '#ff6b6b');
-          hpGrad.addColorStop(0.5, '#e84057');
-          hpGrad.addColorStop(1, '#c02040');
-        }
+        hpGrad.addColorStop(0, '#5eeaaa');
+        hpGrad.addColorStop(0.5, '#3cc88a');
+        hpGrad.addColorStop(1, '#2aa070');
         ctx.fillStyle = hpGrad;
         ctx.fillRect(barX, barY, fillW, barH);
 
-        // Glossy highlight on top half
+        // Glossy highlight
         const glossGrad = ctx.createLinearGradient(barX, barY, barX, barY + barH * 0.5);
-        glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+        glossGrad.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
         glossGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
         ctx.fillStyle = glossGrad;
         ctx.fillRect(barX, barY, fillW, barH * 0.5);
 
         ctx.restore();
-
-        // Animated shimmer across the bar
-        const shimmerPos = ((performance.now() % 2000) / 2000) * (barW + 40) - 20;
-        ctx.save();
-        ctx.beginPath();
-        this._roundRect(ctx, barX, barY, fillW, barH, barRad);
-        ctx.clip();
-        const shimGrad = ctx.createLinearGradient(barX + shimmerPos - 15, 0, barX + shimmerPos + 15, 0);
-        shimGrad.addColorStop(0, 'rgba(255,255,255,0)');
-        shimGrad.addColorStop(0.5, 'rgba(255,255,255,0.12)');
-        shimGrad.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = shimGrad;
-        ctx.fillRect(barX + shimmerPos - 15, barY, 30, barH);
-        ctx.restore();
       }
 
-      // Damage flash overlay (white flash on hit)
+      // Damage flash
       if (this._trackHpFlash > 0) {
-        const flashAlpha = (this._trackHpFlash / 120) * 0.4;
+        const flashAlpha = (this._trackHpFlash / 120) * 0.35;
         ctx.beginPath();
         this._roundRect(ctx, barX, barY, barW * hpRatio, barH, barRad);
         ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
         ctx.fill();
       }
 
-      // HP percentage text
-      const hpPct = Math.round(hpRatio * 100);
-      ctx.font = '700 9px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = hpRatio > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.85)';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
-      ctx.fillText(hpPct + '%', barX + barW / 2, barY + barH / 2 + 0.5);
-
       ctx.restore();
     }
-
-    // Draw hit spark particles
-    this._trackHitParticles = this._trackHitParticles.filter(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.08;
-      p.life -= 0.04;
-      if (p.life <= 0) return false;
-      ctx.save();
-      ctx.globalAlpha = p.life;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      const bright = Math.random() > 0.5;
-      ctx.fillStyle = bright ? '#ffcc44' : '#ff8833';
-      ctx.shadowColor = bright ? 'rgba(255,200,60,0.6)' : 'rgba(255,120,40,0.5)';
-      ctx.shadowBlur = 6;
-      ctx.fill();
-      ctx.restore();
-      return true;
-    });
-
-    // Draw floating damage numbers
-    const now = performance.now();
-    this._trackDmgAnims = this._trackDmgAnims.filter(d => {
-      const elapsed = now - d.startTime;
-      if (elapsed >= d.duration) return false;
-      const t = elapsed / d.duration;
-      const alpha = 1 - t * t;
-      const yOff = -30 * t;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.font = '900 16px "Black Han Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#ff6644';
-      ctx.shadowColor = 'rgba(255,60,20,0.5)';
-      ctx.shadowBlur = 6;
-      ctx.fillText('-' + d.dmg, d.x, d.y + yOff);
-      ctx.restore();
-      return true;
-    });
   }
 
   // Helper: draw rounded rectangle path
