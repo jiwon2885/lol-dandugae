@@ -29,6 +29,7 @@
 
   <!-- ===== 로그인 화면 ===== -->
   <div id="screen-login" class="screen active">
+    <canvas id="login-particles" class="login-particles"></canvas>
     <div class="login-box">
       <h1 class="title-logo">롤대남 단두대</h1>
       <p class="subtitle">에임 & 반응속도 트레이너</p>
@@ -170,6 +171,7 @@
       <span id="hud-mode-badge" class="hud-mode-badge"></span>
       <button id="btn-pause" class="hud-pause" title="일시정지">⏸</button>
     </div>
+    <div id="urgency-vignette" class="urgency-vignette"></div>
     <canvas id="game-canvas"></canvas>
     <div id="game-end-overlay" class="game-end-overlay">
       <span class="game-end-text">TIME'S UP</span>
@@ -217,6 +219,7 @@
 
   <!-- ===== 결과 화면 ===== -->
   <div id="screen-result" class="screen">
+    <canvas id="result-particles" class="result-particles"></canvas>
     <div class="result-card">
       <h2 class="result-title">처형 완료</h2>
       <div class="grade-row">

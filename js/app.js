@@ -100,10 +100,21 @@
     img.src = src;
   });
 
+  // Particle system references (initialized at bottom)
+  let loginParticles = null;
+  let resultParticlesCtrl = null;
+
   // --- Screen management ---
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
+    // Manage ambient particles
+    if (loginParticles) {
+      if (name === 'login') loginParticles.start(); else loginParticles.stop();
+    }
+    if (name !== 'result' && resultParticlesCtrl) {
+      resultParticlesCtrl.stop();
+    }
   }
 
   // ========== AUTH STATE ==========
@@ -441,6 +452,11 @@
     const hudModeBadge = document.getElementById('hud-mode-badge');
     if (hudModeBadge) hudModeBadge.textContent = MODE_LABELS[currentMode] || '';
 
+    // Reset urgency state
+    el.hudTime.classList.remove('urgent');
+    const vig = document.getElementById('urgency-vignette');
+    if (vig) vig.classList.remove('active');
+
     // Force fullscreen to prevent window shrinking exploit
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -531,10 +547,15 @@
       if (accEl) accEl.textContent = (stats.trackAccuracy || 0) + '%';
     }
 
+    const vignette = document.getElementById('urgency-vignette');
     if (stats.timeLeft <= 5) {
       el.hudTime.style.color = '#e84057';
+      el.hudTime.classList.add('urgent');
+      if (vignette) vignette.classList.add('active');
     } else {
       el.hudTime.style.color = '';
+      el.hudTime.classList.remove('urgent');
+      if (vignette) vignette.classList.remove('active');
     }
   }
 
@@ -634,9 +655,10 @@
     el.resCombo.textContent = '0';
     el.resKpm.textContent = '0';
 
-    // Trigger reveal animation
+    // Trigger reveal animation + grade particles
     requestAnimationFrame(() => {
       resultCard.classList.add('reveal');
+      startResultParticles(grade);
       // Count-up score
       animateCountUp(el.resultScore, totalScore, 'pt', 600);
       // Count-up stats (staggered)
@@ -1263,6 +1285,86 @@
       activateBan();
     }
   }, 3000);
+
+  // ========== AMBIENT PARTICLES ==========
+  function initParticleCanvas(canvasId, color, count, speed) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    let w, h, rafId = null;
+
+    function resize() {
+      w = canvas.parentElement.clientWidth;
+      h = canvas.parentElement.clientHeight;
+      canvas.width = w;
+      canvas.height = h;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * (w || 800),
+        y: Math.random() * (h || 600),
+        r: 1 + Math.random() * 2.5,
+        vx: (Math.random() - 0.5) * speed,
+        vy: -Math.random() * speed * 0.8 - 0.1,
+        alpha: 0.1 + Math.random() * 0.4,
+        pulse: Math.random() * Math.PI * 2,
+      });
+    }
+
+    function draw() {
+      rafId = requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, w, h);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.pulse += 0.015;
+        const a = p.alpha * (0.6 + 0.4 * Math.sin(p.pulse));
+        if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = color.replace('ALPHA', a.toFixed(2));
+        ctx.fill();
+      }
+    }
+
+    return {
+      start() { if (!rafId) draw(); },
+      stop() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } },
+      setColor(c) { color = c; },
+    };
+  }
+
+  // Login ambient particles (gold mist)
+  loginParticles = initParticleCanvas(
+    'login-particles',
+    'rgba(200,169,110,ALPHA)', 35, 0.4
+  );
+  if (loginParticles) loginParticles.start();
+
+  // Result particles (grade-dependent)
+  function startResultParticles(grade) {
+    if (!resultParticlesCtrl) {
+      resultParticlesCtrl = initParticleCanvas(
+        'result-particles',
+        'rgba(200,169,110,ALPHA)', 30, 0.3
+      );
+    }
+    if (!resultParticlesCtrl) return;
+    if (grade === 'S+' || grade === 'S') {
+      resultParticlesCtrl.setColor('rgba(240,212,138,ALPHA)');
+    } else if (grade === 'A') {
+      resultParticlesCtrl.setColor('rgba(200,169,110,ALPHA)');
+    } else {
+      resultParticlesCtrl.setColor('rgba(120,115,110,ALPHA)');
+    }
+    resultParticlesCtrl.start();
+  }
 
   // --- Init ---
   showScreen('login');
