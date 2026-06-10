@@ -272,17 +272,9 @@
     const infoVals = document.querySelectorAll('.lobby-info-value');
     const infoLabels = document.querySelectorAll('.lobby-info-label');
     if (infoVals[0]) infoVals[0].textContent = dur + '초';
-    if (fpsView) {
-      const internal = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
-      const cfg = SENS_GAMES[currentSensGame];
-      const gameSens = getGameSensFromInternal(internal, currentSensGame);
-      if (infoLabels[1]) infoLabels[1].textContent = cfg.label + ' 감도';
-      if (infoVals[1]) infoVals[1].textContent = gameSens.toFixed(cfg.decimals);
-    } else {
-      const tSize = TARGET_SIZES[currentMode] || 100;
-      if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
-      if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
-    }
+    const tSize = TARGET_SIZES[currentMode] || 100;
+    if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
+    if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
     // Show/hide lobby sensitivity cards
     const lobbyNormalSensCard = document.getElementById('lobby-normal-sens-card');
     if (lobbyNormalSensCard) lobbyNormalSensCard.style.display = fpsView ? 'none' : '';
