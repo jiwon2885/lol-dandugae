@@ -283,6 +283,11 @@
       if (infoLabels[1]) infoLabels[1].textContent = '타겟 크기';
       if (infoVals[1]) infoVals[1].textContent = tSize + 'px';
     }
+    // Show/hide lobby sensitivity card
+    if (lobbySensCard) {
+      lobbySensCard.style.display = fpsView ? '' : 'none';
+      if (fpsView) applySensGame(currentSensGame); // sync lobby sliders
+    }
   }
 
   let faceWraps = {}; // persistent DOM references by index
@@ -475,8 +480,12 @@
   const fpsSensVal = document.getElementById('fps-sens-val');
   const pauseFpsSensSlider = document.getElementById('pause-fps-sensitivity');
   const pauseFpsSensVal = document.getElementById('pause-fps-sens-val');
+  const lobbySensSlider = document.getElementById('lobby-fps-sensitivity');
+  const lobbySensVal = document.getElementById('lobby-fps-sens-val');
   const sensGameLabel = document.getElementById('sens-game-label');
   const pauseSensGameLabel = document.getElementById('pause-sens-game-label');
+  const lobbySensGameLabel = document.getElementById('lobby-sens-game-label');
+  const lobbySensCard = document.getElementById('lobby-sens-card');
 
   const SENS_GAMES = {
     raw:       { label: '일반',     factor: 1,       min: 5, max: 300, step: 1, decimals: 2, div: 100 },
@@ -498,23 +507,27 @@
     const cfg = SENS_GAMES[game];
     localStorage.setItem('fps_sens_game', game);
     document.querySelectorAll('.sens-game-btn').forEach(b => b.classList.toggle('active', b.dataset.game === game));
-    if (sensGameLabel) sensGameLabel.textContent = '(' + cfg.label + ')';
-    if (pauseSensGameLabel) pauseSensGameLabel.textContent = '(' + cfg.label + ')';
+    const labelText = '(' + cfg.label + ')';
+    if (sensGameLabel) sensGameLabel.textContent = labelText;
+    if (pauseSensGameLabel) pauseSensGameLabel.textContent = labelText;
+    if (lobbySensGameLabel) lobbySensGameLabel.textContent = labelText;
 
-    // Update slider range
-    fpsSensSlider.min = cfg.min;
-    fpsSensSlider.max = cfg.max;
-    fpsSensSlider.step = cfg.step;
+    // Update all slider ranges
+    const sliders = [fpsSensSlider, pauseFpsSensSlider, lobbySensSlider];
+    for (const s of sliders) {
+      s.min = cfg.min; s.max = cfg.max; s.step = cfg.step;
+    }
 
     // Convert current internal sens to this game's value
     const internal = parseFloat(localStorage.getItem('fps_sensitivity') || '0.30');
     const gameSens = getGameSensFromInternal(internal, game);
     const clamped = Math.max(cfg.min / cfg.div, Math.min(cfg.max / cfg.div, gameSens));
     const sliderVal = Math.round(clamped * cfg.div);
-    fpsSensSlider.value = sliderVal;
-    fpsSensVal.textContent = clamped.toFixed(cfg.decimals);
-    pauseFpsSensSlider.value = sliderVal;
-    pauseFpsSensVal.textContent = clamped.toFixed(cfg.decimals);
+    const displayText = clamped.toFixed(cfg.decimals);
+    for (const s of sliders) s.value = sliderVal;
+    fpsSensVal.textContent = displayText;
+    pauseFpsSensVal.textContent = displayText;
+    lobbySensVal.textContent = displayText;
     saveUserSensitivity();
   }
 
@@ -522,10 +535,13 @@
     const cfg = SENS_GAMES[currentSensGame];
     const gameSens = Number(sliderVal) / cfg.div;
     const internal = getInternalFromGameSens(gameSens, currentSensGame);
+    const displayText = gameSens.toFixed(cfg.decimals);
     fpsSensSlider.value = sliderVal;
-    fpsSensVal.textContent = gameSens.toFixed(cfg.decimals);
+    fpsSensVal.textContent = displayText;
     pauseFpsSensSlider.value = sliderVal;
-    pauseFpsSensVal.textContent = gameSens.toFixed(cfg.decimals);
+    pauseFpsSensVal.textContent = displayText;
+    lobbySensSlider.value = sliderVal;
+    lobbySensVal.textContent = displayText;
     localStorage.setItem('fps_sensitivity', internal.toFixed(4));
     if (gameEngine && gameEngine.sensitivity != null) gameEngine.sensitivity = internal;
     saveUserSensitivity();
@@ -566,9 +582,51 @@
   applySensGame(currentSensGame);
   fpsSensSlider.addEventListener('input', () => syncFpsSens(fpsSensSlider.value));
   pauseFpsSensSlider.addEventListener('input', () => syncFpsSens(pauseFpsSensSlider.value));
+  lobbySensSlider.addEventListener('input', () => syncFpsSens(lobbySensSlider.value));
   document.querySelectorAll('.sens-game-btn').forEach(btn => {
     btn.addEventListener('click', () => applySensGame(btn.dataset.game));
   });
+
+  // --- Editable sensitivity value: click number to type custom value ---
+  function makeEditable(spanEl, onCommit) {
+    spanEl.addEventListener('click', () => {
+      if (spanEl.querySelector('input')) return; // already editing
+      const currentText = spanEl.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'sens-val-input';
+      input.value = currentText;
+      spanEl.textContent = '';
+      spanEl.appendChild(input);
+      input.focus();
+      input.select();
+
+      function commit() {
+        const val = parseFloat(input.value);
+        if (spanEl.contains(input)) spanEl.removeChild(input);
+        if (!isNaN(val) && val > 0) {
+          onCommit(val);
+        } else {
+          spanEl.textContent = currentText;
+        }
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = currentText; input.blur(); }
+      });
+    });
+  }
+
+  function onSensValueEdit(val) {
+    const cfg = SENS_GAMES[currentSensGame];
+    const clamped = Math.max(cfg.min / cfg.div, Math.min(cfg.max / cfg.div, val));
+    const sliderVal = Math.round(clamped * cfg.div);
+    syncFpsSens(sliderVal);
+  }
+  makeEditable(fpsSensVal, onSensValueEdit);
+  makeEditable(pauseFpsSensVal, onSensValueEdit);
+  makeEditable(lobbySensVal, onSensValueEdit);
 
   // Start game
   el.btnStart.addEventListener('click', () => {
@@ -611,18 +669,21 @@
       document.getElementById('fps-container').style.display = 'none';
       document.getElementById('fps-crosshair').style.display = 'none';
     }
+
+    // Hide cursor for FPS mode BEFORE fullscreen (including during countdown)
+    if (isFps) {
+      document.documentElement.classList.add('fps-no-cursor');
+      // Clear inline cursor style that could override CSS
+      screens.game.style.cursor = '';
+    } else {
+      document.documentElement.classList.remove('fps-no-cursor');
+    }
+
     // Force fullscreen for all modes
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
     showScreen('game');
-
-    // Hide cursor for FPS mode (including during countdown)
-    if (isFps) {
-      document.documentElement.classList.add('fps-no-cursor');
-    } else {
-      document.documentElement.classList.remove('fps-no-cursor');
-    }
 
     if (!isFps) {
       // Set canvas size before countdown (engine will draw bg on start)
@@ -783,6 +844,7 @@
       document.getElementById('fps-crosshair').style.display = 'none';
       // Restore cursor after FPS mode
       document.documentElement.classList.remove('fps-no-cursor');
+      applyCursor(currentCursor);
       showScreen('result');
     }, 1400);
 
@@ -1329,7 +1391,8 @@
     document.getElementById('fps-container').style.display = 'none';
     document.getElementById('fps-crosshair').style.display = 'none';
     // Restore cursor after FPS mode
-    screens.game.style.cursor = CURSOR_MAP[currentCursor] || 'crosshair';
+    document.documentElement.classList.remove('fps-no-cursor');
+    applyCursor(currentCursor);
     AudioManager.stopBGM();
     el.pauseOverlay.classList.remove('active');
     if (document.fullscreenElement) {

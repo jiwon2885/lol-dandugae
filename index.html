@@ -147,6 +147,27 @@
         </div>
       </div>
 
+      <!-- Lobby FPS sensitivity (shown when FPS view) -->
+      <div id="lobby-sens-card" class="lobby-card lobby-sens-card" style="display:none;">
+        <h3 class="lobby-sens-title">FPS 감도 설정</h3>
+        <div class="setting-row">
+          <label>감도 기준</label>
+          <div class="sens-game-btns">
+            <button class="sens-game-btn lobby-sens-game-btn active" data-game="raw">일반</button>
+            <button class="sens-game-btn lobby-sens-game-btn" data-game="valorant">발로란트</button>
+            <button class="sens-game-btn lobby-sens-game-btn" data-game="overwatch">오버워치</button>
+            <button class="sens-game-btn lobby-sens-game-btn" data-game="pubg">배그</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label>감도 <small id="lobby-sens-game-label" style="color:var(--text-dim)">(일반)</small></label>
+          <div class="slider-ctrl">
+            <input type="range" id="lobby-fps-sensitivity" min="5" max="300" value="30" step="1">
+            <span id="lobby-fps-sens-val" class="slider-val slider-val-editable">0.30</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Lobby mini history -->
       <div id="lobby-history" class="lobby-history-card" style="display:none;">
         <div class="lobby-history-header">
@@ -226,7 +247,7 @@
             <label>FPS 감도 <small id="pause-sens-game-label" style="color:var(--text-dim)"></small></label>
             <div class="slider-ctrl">
               <input type="range" id="pause-fps-sensitivity" min="5" max="300" value="30" step="1">
-              <span id="pause-fps-sens-val" class="slider-val">0.30</span>
+              <span id="pause-fps-sens-val" class="slider-val slider-val-editable">0.30</span>
             </div>
           </div>
         </div>
@@ -374,7 +395,7 @@
           <label>감도 <small id="sens-game-label" style="color:var(--text-dim)">(일반)</small></label>
           <div class="slider-ctrl">
             <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
-            <span id="fps-sens-val" class="slider-val">0.30</span>
+            <span id="fps-sens-val" class="slider-val slider-val-editable">0.30</span>
           </div>
         </div>
       </div>
