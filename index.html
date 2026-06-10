@@ -339,35 +339,44 @@
         <h3>설정</h3>
         <button id="btn-settings-close" class="btn-settings-close">✕</button>
       </div>
-      <div class="setting-row">
-        <label>BGM 볼륨</label>
-        <div class="slider-ctrl">
-          <input type="range" id="vol-bgm" min="0" max="100" value="50">
-          <span id="vol-bgm-val" class="slider-val">50</span>
+      <div class="settings-section">
+        <div class="settings-section-title">소리</div>
+        <div class="setting-row">
+          <label>BGM 볼륨</label>
+          <div class="slider-ctrl">
+            <input type="range" id="vol-bgm" min="0" max="100" value="50">
+            <span id="vol-bgm-val" class="slider-val">50</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label>효과음 볼륨</label>
+          <div class="slider-ctrl">
+            <input type="range" id="vol-sfx" min="0" max="100" value="50">
+            <span id="vol-sfx-val" class="slider-val">50</span>
+          </div>
         </div>
       </div>
-      <div class="setting-row">
-        <label>효과음 볼륨</label>
-        <div class="slider-ctrl">
-          <input type="range" id="vol-sfx" min="0" max="100" value="50">
-          <span id="vol-sfx-val" class="slider-val">50</span>
+      <div class="settings-section">
+        <div class="settings-section-title">일반 모드</div>
+        <div class="setting-row">
+          <label>커서 모양</label>
+          <div class="cursor-options">
+            <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
+            <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
+            <button class="btn-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
+            <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
+            <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
+          </div>
         </div>
       </div>
-      <div class="setting-row">
-        <label>커서 모양</label>
-        <div class="cursor-options">
-          <button class="btn-cursor active" data-cursor="crosshair" title="십자가">+</button>
-          <button class="btn-cursor" data-cursor="default" title="기본">↖</button>
-          <button class="btn-cursor" data-cursor="dot" title="도트"><span style="color:#49d9b2;font-size:1.2rem">●</span></button>
-          <button class="btn-cursor" data-cursor="shield" title="방패"><img src="assets/cursor_shield.png" class="cursor-preview"></button>
-          <button class="btn-cursor" data-cursor="gauntlet" title="건틀렛"><img src="assets/cursor_gauntlet.png" class="cursor-preview"></button>
-        </div>
-      </div>
-      <div class="setting-row">
-        <label>FPS 감도 <small style="color:var(--text-dim)">(발로란트 기준)</small></label>
-        <div class="slider-ctrl">
-          <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
-          <span id="fps-sens-val" class="slider-val">0.30</span>
+      <div class="settings-section">
+        <div class="settings-section-title">FPS 모드</div>
+        <div class="setting-row">
+          <label>감도 <small style="color:var(--text-dim)">(발로란트 기준)</small></label>
+          <div class="slider-ctrl">
+            <input type="range" id="fps-sensitivity" min="5" max="300" value="30" step="1">
+            <span id="fps-sens-val" class="slider-val">0.30</span>
+          </div>
         </div>
       </div>
     </div>
