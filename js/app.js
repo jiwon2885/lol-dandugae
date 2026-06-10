@@ -741,6 +741,7 @@
       accuracy: acc,
       maxCombo: stats.maxCombo,
       reactionMs: stats.avgReaction,
+      mode: currentMode,
     });
     const t = GRADE_THRESHOLDS[currentMode] || GRADE_THRESHOLDS.grid;
     if (score >= t['S+']) return 'S+';
