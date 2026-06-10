@@ -30,7 +30,7 @@ class FPSGameEngine {
     const h = window.innerHeight;
 
     this._scene = new THREE.Scene();
-    this._scene.fog = new THREE.FogExp2(0x0a1e25, 0.04);
+    this._scene.fog = new THREE.FogExp2(0x1a3845, 0.025);
 
     this._camera = new THREE.PerspectiveCamera(70, w / h, 0.1, 100);
     this._camera.position.set(0, 0, 0);
@@ -38,7 +38,7 @@ class FPSGameEngine {
     this._renderer = new THREE.WebGLRenderer({ antialias: true });
     this._renderer.setSize(w, h);
     this._renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this._renderer.setClearColor(0x0a1e25);
+    this._renderer.setClearColor(0x1a3845);
     container.appendChild(this._renderer.domElement);
 
     this._raycaster = new THREE.Raycaster();
@@ -55,11 +55,14 @@ class FPSGameEngine {
 
     this._createRoom();
 
-    this._scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.5);
+    this._scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.6);
     dir.position.set(3, 8, 5);
     this._scene.add(dir);
-    const pLight = new THREE.PointLight(0x49d9b2, 0.3, 20);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    dir2.position.set(-3, -2, -5);
+    this._scene.add(dir2);
+    const pLight = new THREE.PointLight(0x49d9b2, 0.4, 25);
     pLight.position.set(0, 2, 0);
     this._scene.add(pLight);
 
@@ -104,49 +107,68 @@ class FPSGameEngine {
   }
 
   _createRoom() {
-    const W = 20, H = 12, D = 20;
+    this._W = 20; this._H = 12; this._D = 20;
+    const W = this._W, H = this._H, D = this._D;
+    const hW = W / 2, hH = H / 2, hD = D / 2;
+    const R = 0.5; // target sphere radius
+
+    // Walls — brighter, slightly reflective
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x0d2830,
+      color: 0x1e4855,
       side: THREE.BackSide,
-      roughness: 0.9,
-      metalness: 0.05,
+      roughness: 0.75,
+      metalness: 0.1,
     });
     const roomGeo = new THREE.BoxGeometry(W, H, D);
     this._scene.add(new THREE.Mesh(roomGeo, wallMat));
 
-    const floorGrid = new THREE.GridHelper(W, 20, 0x1a5560, 0x0f3540);
-    floorGrid.position.y = -H / 2;
+    // Floor grid
+    const floorGrid = new THREE.GridHelper(W, 20, 0x2a7080, 0x1a5060);
+    floorGrid.position.y = -hH;
     floorGrid.material.transparent = true;
-    floorGrid.material.opacity = 0.3;
+    floorGrid.material.opacity = 0.35;
     this._scene.add(floorGrid);
 
-    // Wall grid lines for depth
-    const mat = new THREE.LineBasicMaterial({ color: 0x1a5560, transparent: true, opacity: 0.12 });
+    // Wall grid lines for depth perception
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x2a6070, transparent: true, opacity: 0.15 });
     const step = 2;
-    for (let z = -D / 2; z <= D / 2; z += step) {
+    // Floor lines
+    for (let z = -hD; z <= hD; z += step) {
       const g = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-W / 2, -H / 2, z), new THREE.Vector3(W / 2, -H / 2, z)
+        new THREE.Vector3(-hW, -hH, z), new THREE.Vector3(hW, -hH, z)
       ]);
-      this._scene.add(new THREE.Line(g, mat));
+      this._scene.add(new THREE.Line(g, gridMat));
     }
-    for (let x = -W / 2; x <= W / 2; x += step) {
+    for (let x = -hW; x <= hW; x += step) {
       const g = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(x, -H / 2, -D / 2), new THREE.Vector3(x, -H / 2, D / 2)
+        new THREE.Vector3(x, -hH, -hD), new THREE.Vector3(x, -hH, hD)
       ]);
-      this._scene.add(new THREE.Line(g, mat));
+      this._scene.add(new THREE.Line(g, gridMat));
+    }
+    // Back wall grid
+    for (let x = -hW; x <= hW; x += step) {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(x, -hH, -hD), new THREE.Vector3(x, hH, -hD)
+      ]);
+      this._scene.add(new THREE.Line(g, gridMat));
+    }
+    for (let y = -hH; y <= hH; y += step) {
+      const g = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-hW, y, -hD), new THREE.Vector3(hW, y, -hD)
+      ]);
+      this._scene.add(new THREE.Line(g, gridMat));
     }
 
     // Room edge lines (visible borders)
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x49d9b2, transparent: true, opacity: 0.35 });
-    const hW = W / 2, hH = H / 2, hD = D / 2;
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x49d9b2, transparent: true, opacity: 0.5 });
     const corners = [
       [-hW,-hH,-hD], [hW,-hH,-hD], [hW,-hH,hD], [-hW,-hH,hD],
       [-hW, hH,-hD], [hW, hH,-hD], [hW, hH,hD], [-hW, hH,hD],
     ];
     const edges = [
-      [0,1],[1,2],[2,3],[3,0], // bottom
-      [4,5],[5,6],[6,7],[7,4], // top
-      [0,4],[1,5],[2,6],[3,7], // vertical
+      [0,1],[1,2],[2,3],[3,0],
+      [4,5],[5,6],[6,7],[7,4],
+      [0,4],[1,5],[2,6],[3,7],
     ];
     for (const [a, b] of edges) {
       const g = new THREE.BufferGeometry().setFromPoints([
@@ -155,44 +177,74 @@ class FPSGameEngine {
       this._scene.add(new THREE.Line(g, edgeMat));
     }
 
+    // Wall definitions for target spawning: [axis, value, rangeA, rangeB, margin]
+    // Targets spawn ON walls (sphere center = wall + radius offset)
+    const m = 2; // margin from wall edges
+    this._walls = [
+      { axis: 'z', val: -hD + R, rA: [-hW + m, hW - m], rB: [-hH + m, hH - m], aKey: 'x', bKey: 'y' }, // back
+      { axis: 'x', val: -hW + R, rA: [-hH + m, hH - m], rB: [-hD + m, -3],      aKey: 'y', bKey: 'z' }, // left
+      { axis: 'x', val:  hW - R, rA: [-hH + m, hH - m], rB: [-hD + m, -3],      aKey: 'y', bKey: 'z' }, // right
+      { axis: 'y', val: -hH + R, rA: [-hW + m, hW - m], rB: [-hD + m, -3],      aKey: 'x', bKey: 'z' }, // floor
+      { axis: 'y', val:  hH - R, rA: [-hW + m, hW - m], rB: [-hD + m, -3],      aKey: 'x', bKey: 'z' }, // ceiling
+    ];
+
+    // Room bounds for tracking mode bouncing
     this._roomBounds = {
-      minX: -W / 2 + 3, maxX: W / 2 - 3,
-      minY: -H / 2 + 2, maxY: H / 2 - 2,
-      minZ: -D / 2 + 3, maxZ: -3,
+      minX: -hW + R + 0.5, maxX: hW - R - 0.5,
+      minY: -hH + R + 0.5, maxY: hH - R - 0.5,
+      minZ: -hD + R + 0.5, maxZ: -2,
     };
   }
 
   _spawnTarget() {
-    const b = this._roomBounds;
-    let x, y, z, attempts = 0;
-    do {
-      x = b.minX + Math.random() * (b.maxX - b.minX);
-      y = b.minY + Math.random() * (b.maxY - b.minY);
-      z = b.minZ + Math.random() * (b.maxZ - b.minZ);
-      attempts++;
-    } while (Math.sqrt(x * x + y * y + z * z) < 3 && attempts < 20);
+    let x, y, z;
+    const minDist = 2.5; // minimum distance between targets
+
+    if (this._isTracking) {
+      // Tracking: spawn in open space (will move around)
+      const b = this._roomBounds;
+      for (let att = 0; att < 30; att++) {
+        x = b.minX + Math.random() * (b.maxX - b.minX);
+        y = b.minY + Math.random() * (b.maxY - b.minY);
+        z = b.minZ + Math.random() * (b.maxZ - b.minZ);
+        if (this._checkNoOverlap(x, y, z, minDist)) break;
+      }
+    } else {
+      // Grid/Triple: spawn ON a random wall
+      for (let att = 0; att < 40; att++) {
+        const wall = this._walls[Math.floor(Math.random() * this._walls.length)];
+        const a = wall.rA[0] + Math.random() * (wall.rA[1] - wall.rA[0]);
+        const b = wall.rB[0] + Math.random() * (wall.rB[1] - wall.rB[0]);
+        x = wall.axis === 'x' ? wall.val : (wall.aKey === 'x' ? a : b);
+        y = wall.axis === 'y' ? wall.val : (wall.aKey === 'y' ? a : b);
+        z = wall.axis === 'z' ? wall.val : (wall.bKey === 'z' ? b : a);
+        if (this._checkNoOverlap(x, y, z, minDist)) break;
+      }
+    }
 
     const mat = new THREE.MeshStandardMaterial({
       color: 0xe84057, roughness: 0.25, metalness: 0.3,
-      emissive: 0x991020, emissiveIntensity: 0.2,
+      emissive: 0x991020, emissiveIntensity: 0.3,
     });
     const sphere = new THREE.Mesh(this._targetGeo, mat);
     sphere.position.set(x, y, z);
     this._scene.add(sphere);
 
+    // Face texture — large billboard sprite
     if (this._faceTextures.length > 0) {
       const tex = this._faceTextures[Math.floor(Math.random() * this._faceTextures.length)];
       const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
       const faceSprite = new THREE.Sprite(spriteMat);
-      faceSprite.scale.set(0.9, 0.9, 1);
+      faceSprite.scale.set(1.0, 1.0, 1);
       faceSprite.renderOrder = 1;
       sphere.add(faceSprite);
       sphere.userData.faceSprite = faceSprite;
     }
 
-    const ringGeo = new THREE.RingGeometry(0.55, 0.62, 32);
+    // Glow ring
+    const ringGeo = new THREE.RingGeometry(0.55, 0.65, 32);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xff3333, transparent: true, opacity: 0.5, side: THREE.DoubleSide,
+      color: 0xff3333, transparent: true, opacity: 0.6, side: THREE.DoubleSide,
     });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     sphere.add(ring);
@@ -211,6 +263,15 @@ class FPSGameEngine {
     }
     this._targets.push(target);
     return target;
+  }
+
+  _checkNoOverlap(x, y, z, minDist) {
+    for (const t of this._targets) {
+      const p = t.mesh.position;
+      const dx = p.x - x, dy = p.y - y, dz = p.z - z;
+      if (dx * dx + dy * dy + dz * dz < minDist * minDist) return false;
+    }
+    return true;
   }
 
   _removeTarget(target) {
