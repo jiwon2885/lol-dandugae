@@ -495,8 +495,8 @@
   // FPS Crosshair style
   function applyCrosshair(style) {
     currentCrosshair = style;
-    const el = document.getElementById('fps-crosshair');
-    if (el) el.setAttribute('data-style', style);
+    const chEl = document.getElementById('fps-crosshair');
+    if (chEl) chEl.setAttribute('data-style', style);
     document.querySelectorAll('.btn-crosshair').forEach(b =>
       b.classList.toggle('active', b.dataset.ch === style)
     );
@@ -725,12 +725,12 @@
     const isFps = fpsView;
     // Toggle HUD items based on mode
     const isTracking = currentMode === 'tracking';
-    document.querySelectorAll('.hud-tracking').forEach(el => el.style.display = isTracking ? '' : 'none');
-    document.querySelectorAll('.hud-grid').forEach(el => el.style.display = isTracking ? 'none' : '');
+    document.querySelectorAll('.hud-tracking').forEach(item => item.style.display = isTracking ? '' : 'none');
+    document.querySelectorAll('.hud-grid').forEach(item => item.style.display = isTracking ? 'none' : '');
 
     // Show/hide FPS sensitivity in pause menu
-    document.querySelectorAll('.pause-fps-sens').forEach(el => el.style.display = isFps ? '' : 'none');
-    document.querySelectorAll('.pause-normal-sens').forEach(el => el.style.display = isFps ? 'none' : '');
+    document.querySelectorAll('.pause-fps-sens').forEach(item => item.style.display = isFps ? '' : 'none');
+    document.querySelectorAll('.pause-normal-sens').forEach(item => item.style.display = isFps ? 'none' : '');
 
     // Set in-game mode badge
     const hudModeBadge = document.getElementById('hud-mode-badge');
@@ -894,14 +894,12 @@
   }
 
   // Count-up animation helper
-  function animateCountUp(el, target, suffix, duration) {
+  function animateCountUp(elem, target, suffix, duration) {
     const start = performance.now();
-    const from = 0;
     function tick(now) {
       const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      const val = Math.round(from + (target - from) * eased);
-      el.textContent = val + suffix;
+      const eased = 1 - Math.pow(1 - t, 3);
+      elem.textContent = Math.round(target * eased) + suffix;
       if (t < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -1368,9 +1366,9 @@
     el.rankingEmpty.textContent = '로딩 중...';
     el.rankingEmpty.style.display = 'block';
 
-    // Update mode label
+    // Update mode label (strip fps- prefix for lookup)
     const modeLabel = document.getElementById('ranking-mode-label');
-    if (modeLabel) modeLabel.textContent = MODE_LABELS[mode] || '';
+    if (modeLabel) modeLabel.textContent = MODE_LABELS[mode.replace('fps-', '')] || '';
 
     const rankings = await Storage.getRankings(mode);
 

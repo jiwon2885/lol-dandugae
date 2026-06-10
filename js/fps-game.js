@@ -46,7 +46,9 @@ class FPSGameEngine {
 
     this._targets = [];
     this._targetGeo = new THREE.SphereGeometry(0.5, 24, 24);
+    this._particleGeo = new THREE.SphereGeometry(0.04, 4, 4);
     this._hitEffects = [];
+    this._euler = new THREE.Euler(0, 0, 0, 'YXZ');
     this._isTriple = this.mode.includes('triple');
     this._isTracking = this.mode.includes('tracking');
     this._targetCount = this._isTriple ? 3 : 1;
@@ -288,8 +290,8 @@ class FPSGameEngine {
     this._yaw -= e.movementX * mult;
     this._pitch -= e.movementY * mult;
     this._pitch = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.49, this._pitch));
-    const euler = new THREE.Euler(this._pitch, this._yaw, 0, 'YXZ');
-    this._camera.quaternion.setFromEuler(euler);
+    this._euler.set(this._pitch, this._yaw, 0);
+    this._camera.quaternion.setFromEuler(this._euler);
   }
 
   _onShoot() {
@@ -341,9 +343,8 @@ class FPSGameEngine {
 
   _spawnHitEffect(pos) {
     for (let i = 0; i < 10; i++) {
-      const geo = new THREE.SphereGeometry(0.04, 4, 4);
       const mat = new THREE.MeshBasicMaterial({ color: 0xe84057, transparent: true, opacity: 1 });
-      const p = new THREE.Mesh(geo, mat);
+      const p = new THREE.Mesh(this._particleGeo, mat);
       p.position.copy(pos);
       const angle = Math.random() * Math.PI * 2;
       const elev = (Math.random() - 0.5) * Math.PI;
@@ -390,7 +391,7 @@ class FPSGameEngine {
     this._camera.quaternion.identity();
 
     while (this._targets.length > 0) this._removeTarget(this._targets[0]);
-    for (const p of this._hitEffects) { this._scene.remove(p); p.geometry.dispose(); p.material.dispose(); }
+    for (const p of this._hitEffects) { this._scene.remove(p); p.material.dispose(); }
     this._hitEffects = [];
 
     for (let i = 0; i < this._targetCount; i++) this._spawnTarget();
@@ -432,8 +433,9 @@ class FPSGameEngine {
     document.removeEventListener('pointerlockchange', this._boundPointerLockChange);
     window.removeEventListener('resize', this._boundResize);
     while (this._targets.length > 0) this._removeTarget(this._targets[0]);
-    for (const p of this._hitEffects) { this._scene.remove(p); p.geometry.dispose(); p.material.dispose(); }
+    for (const p of this._hitEffects) { this._scene.remove(p); p.material.dispose(); }
     this._targetGeo.dispose();
+    this._particleGeo.dispose();
     this._faceTextures.forEach(t => t.dispose());
     this._renderer.dispose();
     if (this._renderer.domElement.parentNode) {
@@ -486,7 +488,7 @@ class FPSGameEngine {
       p.userData.life -= dtSec * 2.5;
       p.material.opacity = Math.max(0, p.userData.life);
       if (p.userData.life <= 0) {
-        this._scene.remove(p); p.geometry.dispose(); p.material.dispose();
+        this._scene.remove(p); p.material.dispose();
         return false;
       }
       return true;

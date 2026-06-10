@@ -1,6 +1,11 @@
 .claude/
 *.mov
+*.mp4
 
 .vercel
 .env*
 node_modules/
+
+# Root-level trash (assets belong in assets/)
+/IMG_*.png
+/스크린샷*.png
