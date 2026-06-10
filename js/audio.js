@@ -3,7 +3,6 @@ const AudioManager = (() => {
   let audioCtx = null;
   let bgm = null;
   let retroTimer = null;
-  let retroNodes = [];
   let bgmVolume = 0.5;   // 0~1
   let sfxVolume = 0.5;    // 0~1
   let bgmGainNode = null;

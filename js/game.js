@@ -45,6 +45,11 @@ class GameEngine {
     this.canvas.style.width = this.W + 'px';
     this.canvas.style.height = this.H + 'px';
 
+    // Cached background offscreen canvas (avoid redrawing every frame)
+    this._bgCanvas = null;
+    // Cached bounding rect (invalidated on resize)
+    this._cachedRect = null;
+
     // Tracking mode: hold-to-fire state
     this._mouseDown = false;
     this._trackFireTimer = 0; // accumulates dt, fires every interval
@@ -84,7 +89,8 @@ class GameEngine {
       const now = this._perfNow();
       if (now - this._mouseSampleTimer < 30) return;
       this._mouseSampleTimer = now;
-      const rect = this.canvas.getBoundingClientRect();
+      if (!this._cachedRect) this._cachedRect = this.canvas.getBoundingClientRect();
+      const rect = this._cachedRect;
       this._lastMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       // Keep last 200 samples max (rolling window)
       if (this._mousePath.length < 200) {
@@ -97,6 +103,10 @@ class GameEngine {
     this.canvas.addEventListener('mousemove', this._boundMouseMove);
     this.canvas.addEventListener('contextmenu', this._boundContextMenu);
     this.canvas.addEventListener('touchstart', this._boundTouch, { passive: false });
+    // Invalidate cached rect on resize/scroll
+    this._boundInvalidateRect = () => { this._cachedRect = null; };
+    window.addEventListener('resize', this._boundInvalidateRect);
+    window.addEventListener('scroll', this._boundInvalidateRect);
   }
 
   _resizeCanvas() {
@@ -188,6 +198,11 @@ class GameEngine {
     if (this._boundContextMenu) {
       this.canvas.removeEventListener('contextmenu', this._boundContextMenu);
       this._boundContextMenu = null;
+    }
+    if (this._boundInvalidateRect) {
+      window.removeEventListener('resize', this._boundInvalidateRect);
+      window.removeEventListener('scroll', this._boundInvalidateRect);
+      this._boundInvalidateRect = null;
     }
   }
 
@@ -331,9 +346,9 @@ class GameEngine {
           break;
         }
       }
-      this.onTick(this._getStats());
     } else if (this._mouseDown && !this._trackingInside) {
       // Holding outside target = miss + reset combo
+      this._trackFireTimer += dt;
       if (this._trackFireTimer >= this._trackFireInterval) {
         this.misses++;
         this.combo = 0;
@@ -342,9 +357,7 @@ class GameEngine {
           this._spawnMissAnimation(this._lastMousePos.x, this._lastMousePos.y);
         }
         AudioManager.playMissSound();
-        this.onTick(this._getStats());
       }
-      this._trackFireTimer += dt;
     } else {
       this._trackFireTimer = 0;
     }
@@ -436,12 +449,16 @@ class GameEngine {
     for (let i = 0; i < 12; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 2 + Math.random() * 5;
+      const cr = 140 + Math.random() * 40;
+      const cg = 10 + Math.random() * 20;
+      const cb = 10 + Math.random() * 15;
       particles.push({
         x: 0, y: 0,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 2,
         size: 2 + Math.random() * 4,
         life: 1,
+        color: `rgb(${cr|0}, ${cg|0}, ${cb|0})`,
       });
     }
     this.animations.push({
@@ -499,82 +516,32 @@ class GameEngine {
     } else if (this.mode === 'tracking') {
       this._drawTrackingTarget();
     } else {
-      this._drawTarget();
+      if (this.target && this.running) this._drawSingleTarget(this.target);
     }
 
     this._updateAnimations(now);
   }
 
   _drawBg() {
-    if (this.bgImage) {
-      const img = this.bgImage;
-      const scale = Math.max(this.W / img.width, this.H / img.height);
-      const w = img.width * scale;
-      const h = img.height * scale;
-      this.ctx.drawImage(img, (this.W - w) / 2, (this.H - h) / 2, w, h);
-      this.ctx.fillStyle = 'rgba(10, 14, 20, 0.35)';
-      this.ctx.fillRect(0, 0, this.W, this.H);
-    } else {
-      this.ctx.fillStyle = '#0a0e14';
-      this.ctx.fillRect(0, 0, this.W, this.H);
+    if (!this._bgCanvas) {
+      this._bgCanvas = document.createElement('canvas');
+      this._bgCanvas.width = this.W;
+      this._bgCanvas.height = this.H;
+      const bgCtx = this._bgCanvas.getContext('2d');
+      if (this.bgImage) {
+        const img = this.bgImage;
+        const scale = Math.max(this.W / img.width, this.H / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        bgCtx.drawImage(img, (this.W - w) / 2, (this.H - h) / 2, w, h);
+        bgCtx.fillStyle = 'rgba(10, 14, 20, 0.35)';
+        bgCtx.fillRect(0, 0, this.W, this.H);
+      } else {
+        bgCtx.fillStyle = '#0a0e14';
+        bgCtx.fillRect(0, 0, this.W, this.H);
+      }
     }
-  }
-
-  _drawTarget() {
-    if (!this.target || !this.running) return;
-    const t = this.target;
-    const ctx = this.ctx;
-    const r = t.size / 2;
-
-    ctx.save();
-    ctx.globalAlpha = t.opacity;
-
-    // Noxian dark energy outer ring
-    const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.1;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, (r + 8) * pulse, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(180, 20, 30, 0.6)';
-    ctx.lineWidth = 2.5;
-    ctx.shadowColor = 'rgba(200, 30, 30, 0.5)';
-    ctx.shadowBlur = 15;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // Inner glow ring
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, r + 3, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 50, 30, 0.3)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    if (t.faceImg) {
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(t.faceImg, t.x - r, t.y - r, t.size, t.size);
-    } else {
-      // Fallback: red circle with crosshair
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(232, 64, 87, 0.3)';
-      ctx.fill();
-      ctx.strokeStyle = '#e84057';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      // Crosshair
-      ctx.beginPath();
-      ctx.moveTo(t.x - r * 0.6, t.y);
-      ctx.lineTo(t.x + r * 0.6, t.y);
-      ctx.moveTo(t.x, t.y - r * 0.6);
-      ctx.lineTo(t.x, t.y + r * 0.6);
-      ctx.strokeStyle = 'rgba(232, 64, 87, 0.7)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    ctx.restore();
+    this.ctx.drawImage(this._bgCanvas, 0, 0);
   }
 
   _drawTripleTargets() {
@@ -752,6 +719,16 @@ class GameEngine {
       ctx.fill();
       ctx.strokeStyle = '#e84057';
       ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Crosshair
+      ctx.beginPath();
+      ctx.moveTo(t.x - r * 0.6, t.y);
+      ctx.lineTo(t.x + r * 0.6, t.y);
+      ctx.moveTo(t.x, t.y - r * 0.6);
+      ctx.lineTo(t.x, t.y + r * 0.6);
+      ctx.strokeStyle = 'rgba(232, 64, 87, 0.7)';
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
 
@@ -997,7 +974,7 @@ class GameEngine {
           ctx.globalAlpha = p.life * 0.8;
           ctx.beginPath();
           ctx.arc(x + p.x, y + p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgb(${140 + Math.random() * 40}, ${10 + Math.random() * 20}, ${10 + Math.random() * 15})`;
+          ctx.fillStyle = p.color;
           ctx.fill();
           ctx.restore();
         }
@@ -1072,5 +1049,3 @@ class GameEngine {
     ctx.restore();
   }
 }
-
-const var_red = '#e84057';
