@@ -1,6 +1,15 @@
 {
   "private": true,
+  "scripts": {
+    "lint": "node scripts/verify.mjs",
+    "typecheck": "node --check api/_redis.js && node --check api/config.js && node --check api/ban.js && node --check api/scores.js && node --check js/config.js && node --check js/storage.js && node --check js/audio.js && node --check js/game.js && node --check js/fps-game.js && node --check js/app.js",
+    "test": "npm run lint && npm run typecheck",
+    "build": "npm run test",
+    "check:api": "node --check api/scores.js && node --check api/ban.js && node --check api/_redis.js"
+  },
   "dependencies": {
     "@upstash/redis": "^1.38.0"
-  }
+  },
+  "devDependencies": {},
+  "type": "module"
 }

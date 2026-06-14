@@ -1,15 +1,11 @@
-import { Redis } from '@upstash/redis';
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+import { getRedis } from './_redis.js';
 
 const SCORES_KEY = 'guillotine_scores';
 const BAN_DURATION_SEC = 30 * 60;
 
 async function banUser(userId) {
   if (!userId) return;
+  const redis = getRedis();
   const banKey = `ban:${userId}`;
   await redis.set(banKey, Date.now() + BAN_DURATION_SEC * 1000, { ex: BAN_DURATION_SEC });
 }
@@ -21,6 +17,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    const redis = getRedis();
+
     if (req.method === 'GET') {
       const scores = (await redis.get(SCORES_KEY)) || [];
       const modeFilter = req.query.mode || null;
@@ -221,6 +219,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(err.statusCode || 500).json({ error: err.publicMessage || 'Server error' });
   }
 }

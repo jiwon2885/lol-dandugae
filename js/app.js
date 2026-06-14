@@ -1,9 +1,11 @@
 /* ===== App Controller ===== */
-(() => {
+(async () => {
   // --- Supabase Auth ---
-  const SUPABASE_URL = 'https://kksnddwgfnxaztboegax.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtrc25kZHdnZm54YXp0Ym9lZ2F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDA1MDcsImV4cCI6MjA5NjU3NjUwN30.Ba-t8iFrjJXpwV_vxUaEzdDzHtmIkv0WaMs5ZJWoTXA';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const appConfig = await window.AppConfig.load();
+  const supabaseReady = Boolean(appConfig.supabaseUrl && appConfig.supabaseAnonKey && window.supabase);
+  const supabase = supabaseReady
+    ? window.supabase.createClient(appConfig.supabaseUrl, appConfig.supabaseAnonKey)
+    : null;
 
   // --- DOM refs ---
   const screens = {
@@ -186,6 +188,16 @@
   // Step 1: Show loading
   el.loginLoading.style.display = 'block';
   el.btnGoogleLogin.style.display = 'none';
+
+  if (!supabaseReady) {
+    authResolved = true;
+    el.loginLoading.style.display = 'none';
+    el.btnGoogleLogin.style.display = '';
+    el.btnGoogleLogin.disabled = true;
+    el.loginError.textContent = 'Supabase 환경변수 설정이 필요합니다. 배포 전 체크리스트를 확인하세요.';
+    console.error('[Config] Missing Supabase public config. Required: SUPABASE_URL, SUPABASE_ANON_KEY');
+    return;
+  }
 
   // Step 2: Try getSession (works for existing sessions + OAuth redirects with hash)
   supabase.auth.getSession()
@@ -1681,6 +1693,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUserId }),
       });
+      if (!resp.ok) throw new Error('Remote ban write rejected');
       const data = await resp.json();
       if (data.banUntil) showBanScreen(data.banUntil);
     } catch (err) {

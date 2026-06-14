@@ -4,6 +4,7 @@
 
 .vercel
 .env*
+!.env.example
 node_modules/
 
 # Root-level trash (assets belong in assets/)
