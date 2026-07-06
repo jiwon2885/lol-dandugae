@@ -5,7 +5,7 @@ import { dirname, join, normalize } from 'node:path';
 const root = process.cwd();
 const jsFiles = [
   'api/_redis.js',
-  'api/config.js',
+  'api/app-config.js',
   'api/ban.js',
   'api/scores.js',
   'js/config.js',
@@ -41,7 +41,7 @@ for (const ref of uniqueRefs(assetRefs)) {
 }
 
 const appSource = readFileSync(join(root, 'js/app.js'), 'utf8');
-const configApiSource = readFileSync(join(root, 'api/config.js'), 'utf8');
+const configApiSource = readFileSync(join(root, 'api/app-config.js'), 'utf8');
 const banApiSource = readFileSync(join(root, 'api/ban.js'), 'utf8');
 const envExampleSource = readFileSync(join(root, '.env.example'), 'utf8');
 

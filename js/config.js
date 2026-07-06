@@ -6,7 +6,7 @@ window.AppConfig = (() => {
     if (cached) return cached;
 
     try {
-      const res = await fetch('/api/config', {
+      const res = await fetch('/api/app-config', {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       });
